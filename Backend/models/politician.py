@@ -1,19 +1,7 @@
 # region Imports
-from enum import Enum
 from typing import List, Optional
 from pydantic import BaseModel
-# endregion
-
-# region Enums
-class Party(str, Enum):
-    DEMOCRAT = "D"
-    REPUBLICAN = "R"
-    INDEPENDENT = "I"
-
-class Chamber(str, Enum):
-    SENATE = "Senate"
-    HOUSE = "House"
-    EXECUTIVE = "Executive"
+from enums import Party, Chamber
 # endregion
 
 # region Models
@@ -41,4 +29,6 @@ class PoliticianDetail(PoliticianBase):
     stances: List[str] = []
     affiliations: List[str] = []
     controversies: List[str] = []
+    fec_id: Optional[str] = None
+    fec_ids: List[str] = []
 # endregion

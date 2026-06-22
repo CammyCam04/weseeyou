@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import styles from "./page.module.scss";
 import { fetchPoliticians, PoliticianSearchItem } from "../lib/api";
+import Avatar from "./components/Avatar/Avatar";
 
 export default function Home() {
   const [query, setQuery] = useState("");
@@ -19,9 +20,10 @@ export default function Home() {
       try {
         const data = await fetchPoliticians(query);
         setPoliticians(data);
-      } catch (err: any) {
+      } catch (err: unknown) {
         console.error(err);
-        setError(err.message || "An error occurred while fetching data.");
+        const errorMsg = err instanceof Error ? err.message : "An error occurred while fetching data.";
+        setError(errorMsg);
       } finally {
         setLoading(false);
       }
@@ -87,21 +89,12 @@ export default function Home() {
               href={`/profile/${person.id}`}
               className={styles.card}
             >
-              <div className={styles.avatarWrapper}>
-                {person.profile_image_url ? (
-                  /* Standard img tag is used here to bypass Next.js external hostname restrictions for random wiki URLs */
-                  <img
-                    src={person.profile_image_url}
-                    alt={`${person.first_name} ${person.last_name}`}
-                    className={styles.avatar}
-                  />
-                ) : (
-                  <span className={styles.avatarPlaceholder}>
-                    {person.first_name[0]}
-                    {person.last_name[0]}
-                  </span>
-                )}
-              </div>
+              <Avatar
+                src={person.profile_image_url}
+                firstName={person.first_name}
+                lastName={person.last_name}
+                size="small"
+              />
               <h2 className={styles.name}>
                 {person.first_name} {person.last_name}
               </h2>

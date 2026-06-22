@@ -1,8 +1,9 @@
 # region Imports
 from fastapi import APIRouter, HTTPException, Query
-from typing import List, Optional
-from models import PoliticianSearchItem, PoliticianDetail
-from services.congress_service import load_congress_data
+from typing import List, Optional, Dict
+from models import PoliticianSearchItem, PoliticianDetail, FinanceSummary
+from services.legislator_service import load_congress_data
+from services.finance_service import get_campaign_finance
 # endregion
 
 # region Router Setup
@@ -40,5 +41,19 @@ def get_politician_by_id(politician_id: str):
         if p.id.lower() == politician_id.lower():
             return p
     raise HTTPException(status_code=404, detail="Politician not found")
+
+@router.get("/{politician_id}/finance", response_model=Dict[str, FinanceSummary])
+def get_politician_finance(politician_id: str):
+    politicians = load_congress_data()
+    found = False
+    for p in politicians:
+        if p.id.lower() == politician_id.lower():
+            found = True
+            break
+    if not found:
+        raise HTTPException(status_code=404, detail="Politician not found")
+    
+    return get_campaign_finance(politician_id)
 # endregion
+
 

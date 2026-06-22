@@ -1,6 +1,9 @@
 import Link from "next/link";
 import styles from "./profile.module.scss";
-import { fetchPoliticianById } from "../../../lib/api";
+import { fetchPoliticianById, fetchPoliticianFinance } from "../../../lib/api";
+import FinanceChart from "../../components/FinanceChart/FinanceChart";
+import AffiliationsList from "../../components/AffiliationsList/AffiliationsList";
+import Avatar from "../../components/Avatar/Avatar";
 
 interface PageProps {
   params: Promise<{ id: string }>;
@@ -11,13 +14,15 @@ export default async function ProfilePage({ params }: PageProps) {
   const { id } = await params;
 
   let politician;
+  let finance = null;
   let errorMsg = null;
 
   try {
     politician = await fetchPoliticianById(id);
-  } catch (err: any) {
+    finance = await fetchPoliticianFinance(id);
+  } catch (err: unknown) {
     console.error(err);
-    errorMsg = err.message || "Could not retrieve politician profile.";
+    errorMsg = err instanceof Error ? err.message : "Could not retrieve politician profile.";
   }
 
   // Handle errors or not found states
@@ -78,20 +83,12 @@ export default async function ProfilePage({ params }: PageProps) {
       <div className={styles.layout}>
         {/* Left Column: Sidebar Card */}
         <aside className={styles.sidebar}>
-          <div className={styles.avatarWrapper}>
-            {politician.profile_image_url ? (
-              <img
-                src={politician.profile_image_url}
-                alt={`${politician.first_name} ${politician.last_name}`}
-                className={styles.avatar}
-              />
-            ) : (
-              <span className={styles.avatarPlaceholder}>
-                {politician.first_name[0]}
-                {politician.last_name[0]}
-              </span>
-            )}
-          </div>
+          <Avatar
+            src={politician.profile_image_url}
+            firstName={politician.first_name}
+            lastName={politician.last_name}
+            size="large"
+          />
 
           <span className={getPartyClass(politician.party)}>
             {getPartyLabel(politician.party)}
@@ -176,7 +173,7 @@ export default async function ProfilePage({ params }: PageProps) {
 
         {/* Right Column: Key Details */}
         <main className={styles.mainContent}>
-          {/* Stances Card */}
+          {/* Key Stances Card */}
           <section className={styles.section}>
             <h2>Key Stances & Positions</h2>
             {politician.stances.length > 0 ? (
@@ -193,41 +190,22 @@ export default async function ProfilePage({ params }: PageProps) {
             )}
           </section>
 
+          {/* Campaign Finance D3 Card */}
+          {finance && (
+            <section className={styles.section}>
+              <h2>Campaign Finance History</h2>
+              <FinanceChart campaigns={finance} />
+            </section>
+          )}
+
           {/* Affiliations Card */}
           <section className={styles.section}>
             <h2>Committee & Group Affiliations</h2>
-            {politician.affiliations.length > 0 ? (
-              <ul className={styles.list}>
-                {politician.affiliations.map((aff, index) => (
-                  <li key={index} className={styles.listItem}>
-                    <span className={styles.bullet}>&bull;</span>
-                    <span>{aff}</span>
-                  </li>
-                ))}
-              </ul>
-            ) : (
-              <p>No affiliations recorded for this politician yet.</p>
-            )}
-          </section>
-
-          {/* Controversies Card */}
-          <section className={styles.section}>
-            <h2>Controversies & Scrutiny</h2>
-            {politician.controversies.length > 0 ? (
-              <ul className={styles.list}>
-                {politician.controversies.map((controver, index) => (
-                  <li key={index} className={styles.listItem}>
-                    <span className={styles.bullet}>&bull;</span>
-                    <span>{controver}</span>
-                  </li>
-                ))}
-              </ul>
-            ) : (
-              <p>No major controversies recorded for this politician.</p>
-            )}
+            <AffiliationsList items={politician.affiliations} />
           </section>
         </main>
       </div>
     </div>
   );
 }
+

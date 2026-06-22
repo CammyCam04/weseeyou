@@ -8,7 +8,7 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from routes.politicians import router as politicians_router
-from services.congress_service import load_congress_data
+from services.legislator_service import load_congress_data
 # endregion
 
 # region Lifespan Handler
