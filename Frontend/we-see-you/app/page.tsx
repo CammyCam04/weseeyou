@@ -1,67 +1,120 @@
-import Image from "next/image";
+"use client";
+
+import { useEffect, useState } from "react";
+import Link from "next/link";
 import styles from "./page.module.scss";
+import { fetchPoliticians, PoliticianSearchItem } from "../lib/api";
 
 export default function Home() {
+  const [query, setQuery] = useState("");
+  const [politicians, setPoliticians] = useState<PoliticianSearchItem[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  // Fetch politicians based on search query
+  useEffect(() => {
+    const delayDebounce = setTimeout(async () => {
+      setLoading(true);
+      setError(null);
+      try {
+        const data = await fetchPoliticians(query);
+        setPoliticians(data);
+      } catch (err: any) {
+        console.error(err);
+        setError(err.message || "An error occurred while fetching data.");
+      } finally {
+        setLoading(false);
+      }
+    }, 300); // 300ms debounce to prevent hitting the API on every single keystroke
+
+    return () => clearTimeout(delayDebounce);
+  }, [query]);
+
+  // Helper to determine party badge classes
+  const getPartyClass = (party: string) => {
+    switch (party) {
+      case "D":
+        return `${styles.badge} ${styles.badgeD}`;
+      case "R":
+        return `${styles.badge} ${styles.badgeR}`;
+      default:
+        return `${styles.badge} ${styles.badgeI}`;
+    }
+  };
+
+  // Helper to get party full name
+  const getPartyLabel = (party: string) => {
+    switch (party) {
+      case "D":
+        return "Democrat";
+      case "R":
+        return "Republican";
+      default:
+        return "Independent";
+    }
+  };
+
   return (
     <div className={styles.container}>
-      <main className={styles.main}>
-        <Image
-          className={styles.logo}
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
+      <header className={styles.header}>
+        <h1>We See You</h1>
+        <p>Find and track current politicians, their stances, and controversies.</p>
+      </header>
+
+      <div className={styles.searchBox}>
+        <input
+          type="text"
+          placeholder="Search by name, state, party, or title..."
+          className={styles.input}
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
         />
-        <div className={styles.content}>
-          <h1 className={styles.title}>
-            To get started, edit the page.tsx file.
-          </h1>
-          <p className={styles.description}>
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className={styles.linkInline}
+      </div>
+
+      {loading && <div className={styles.status}>Searching database...</div>}
+
+      {error && <div className={`${styles.status} ${styles.error}`}>{error}</div>}
+
+      {!loading && !error && politicians.length === 0 && (
+        <div className={styles.status}>No politicians found matching your search.</div>
+      )}
+
+      {!loading && !error && politicians.length > 0 && (
+        <div className={styles.grid}>
+          {politicians.map((person) => (
+            <Link
+              key={person.id}
+              href={`/profile/${person.id}`}
+              className={styles.card}
             >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className={styles.linkInline}
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
+              <div className={styles.avatarWrapper}>
+                {person.profile_image_url ? (
+                  /* Standard img tag is used here to bypass Next.js external hostname restrictions for random wiki URLs */
+                  <img
+                    src={person.profile_image_url}
+                    alt={`${person.first_name} ${person.last_name}`}
+                    className={styles.avatar}
+                  />
+                ) : (
+                  <span className={styles.avatarPlaceholder}>
+                    {person.first_name[0]}
+                    {person.last_name[0]}
+                  </span>
+                )}
+              </div>
+              <h2 className={styles.name}>
+                {person.first_name} {person.last_name}
+              </h2>
+              <p className={styles.details}>
+                {person.title} &bull; {person.state}
+              </p>
+              <span className={getPartyClass(person.party)}>
+                {getPartyLabel(person.party)}
+              </span>
+            </Link>
+          ))}
         </div>
-        <div className={styles.actions}>
-          <a
-            className={styles.primaryButton}
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className={styles.logo}
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className={styles.secondaryButton}
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
-        </div>
-      </main>
+      )}
     </div>
   );
 }
-
