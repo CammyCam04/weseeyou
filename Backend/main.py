@@ -1,7 +1,7 @@
 # region Imports
 import sys
 import os
-# Add current directory to path so imports work correctly
+# Add backend directory to sys.path so nested imports work correctly
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
 from contextlib import asynccontextmanager
@@ -14,7 +14,7 @@ from services.legislator_service import load_congress_data
 # region Lifespan Handler
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # Load data on startup
+    # Pre-load and cache Congress data on startup
     load_congress_data()
     yield
 # endregion
@@ -22,7 +22,7 @@ async def lifespan(app: FastAPI):
 # region App Initialization
 app = FastAPI(title="We See You API", version="1.0.0", lifespan=lifespan)
 
-# Explicit list of origins to fix the CORS credentials mismatch issue
+# Allowed local dev origins for CORS
 origins = [
     "http://localhost:3000",
     "http://127.0.0.1:3000",
@@ -30,7 +30,6 @@ origins = [
     "http://127.0.0.1:5173",
 ]
 
-# Configure CORS
 app.add_middleware(
     CORSMiddleware,
     allow_origins=origins,

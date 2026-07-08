@@ -12,7 +12,6 @@ export default function Home() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Fetch politicians based on search query
   useEffect(() => {
     const delayDebounce = setTimeout(async () => {
       setLoading(true);
@@ -27,33 +26,21 @@ export default function Home() {
       } finally {
         setLoading(false);
       }
-    }, 300); // 300ms debounce to prevent hitting the API on every single keystroke
+    }, 300); // Debounce search to prevent excessive API requests
 
     return () => clearTimeout(delayDebounce);
   }, [query]);
 
-  // Helper to determine party badge classes
-  const getPartyClass = (party: string) => {
-    switch (party) {
-      case "D":
-        return `${styles.badge} ${styles.badgeD}`;
-      case "R":
-        return `${styles.badge} ${styles.badgeR}`;
-      default:
-        return `${styles.badge} ${styles.badgeI}`;
-    }
+  const partyClasses: Record<string, string> = {
+    D: `${styles.badge} ${styles.badgeD}`,
+    R: `${styles.badge} ${styles.badgeR}`,
+    I: `${styles.badge} ${styles.badgeI}`,
   };
 
-  // Helper to get party full name
-  const getPartyLabel = (party: string) => {
-    switch (party) {
-      case "D":
-        return "Democrat";
-      case "R":
-        return "Republican";
-      default:
-        return "Independent";
-    }
+  const partyLabels: Record<string, string> = {
+    D: "Democrat",
+    R: "Republican",
+    I: "Independent",
   };
 
   return (
@@ -101,8 +88,8 @@ export default function Home() {
               <p className={styles.details}>
                 {person.title} &bull; {person.state}
               </p>
-              <span className={getPartyClass(person.party)}>
-                {getPartyLabel(person.party)}
+              <span className={partyClasses[person.party] || partyClasses.I}>
+                {partyLabels[person.party] || partyLabels.I}
               </span>
             </Link>
           ))}

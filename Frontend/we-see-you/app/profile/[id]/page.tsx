@@ -38,31 +38,18 @@ export default async function ProfilePage({ params }: PageProps) {
     );
   }
 
-  // Helper to determine party badge classes
-  const getPartyClass = (party: string) => {
-    switch (party) {
-      case "D":
-        return `${styles.badge} ${styles.badgeD}`;
-      case "R":
-        return `${styles.badge} ${styles.badgeR}`;
-      default:
-        return `${styles.badge} ${styles.badgeI}`;
-    }
+  const partyClasses: Record<string, string> = {
+    D: `${styles.badge} ${styles.badgeD}`,
+    R: `${styles.badge} ${styles.badgeR}`,
+    I: `${styles.badge} ${styles.badgeI}`,
   };
 
-  // Helper to get party full name
-  const getPartyLabel = (party: string) => {
-    switch (party) {
-      case "D":
-        return "Democrat";
-      case "R":
-        return "Republican";
-      default:
-        return "Independent";
-    }
+  const partyLabels: Record<string, string> = {
+    D: "Democrat",
+    R: "Republican",
+    I: "Independent",
   };
 
-  // Helper to get age from date of birth
   const getAge = (dobString: string) => {
     const today = new Date();
     const birthDate = new Date(dobString);
@@ -90,8 +77,8 @@ export default async function ProfilePage({ params }: PageProps) {
             size="large"
           />
 
-          <span className={getPartyClass(politician.party)}>
-            {getPartyLabel(politician.party)}
+          <span className={partyClasses[politician.party] || partyClasses.I}>
+            {partyLabels[politician.party] || partyLabels.I}
           </span>
 
           <h1 className={styles.name}>

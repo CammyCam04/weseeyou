@@ -26,24 +26,19 @@ def get_campaign_finance(bioguide_id: str) -> Dict[str, FinanceSummary]:
     """
     Fetches campaign finance data for all associated FEC IDs, grouping them by election/campaign cycle.
     """
-    politician = None
-    for p in load_congress_data():
-        if p.id == bioguide_id:
-            politician = p
-            break
-            
+    politician = next((p for p in load_congress_data() if p.id == bioguide_id), None)
     if not politician:
         return {}
         
     campaigns = {}
     
     if FEC_API_KEY:
-        # Collect candidate IDs from cache
+        # Gather all associated FEC candidate IDs
         cand_ids = set(politician.fec_ids or [])
         if politician.fec_id:
             cand_ids.add(politician.fec_id)
             
-        # Perform name search to catch other runs (e.g. presidential campaigns)
+        # Search by name to find other runs (e.g. presidential bids)
         try:
             search_url = "https://api.open.fec.gov/v1/candidates/"
             search_params = {
@@ -60,7 +55,7 @@ def get_campaign_finance(bioguide_id: str) -> Dict[str, FinanceSummary]:
         except Exception as ex:
             print(f"FEC candidate search failed: {ex}")
             
-        # Fetch metadata for candidate IDs
+        # Fetch office/state details for each candidate ID
         metadata_map = {}
         if cand_ids:
             try:
@@ -79,7 +74,7 @@ def get_campaign_finance(bioguide_id: str) -> Dict[str, FinanceSummary]:
             except Exception as ex:
                 print(f"FEC metadata lookup failed: {ex}")
                 
-        # Fetch totals for each candidate ID
+        # Get financial totals for each candidate ID
         grouped_totals = defaultdict(list)
         for fec_id in cand_ids:
             try:
@@ -95,23 +90,19 @@ def get_campaign_finance(bioguide_id: str) -> Dict[str, FinanceSummary]:
             except Exception as ex:
                 print(f"FEC totals request failed for candidate {fec_id}: {ex}")
                 
-        # Group and build campaign summaries
+        # Group and summarize campaign finance data
         for (fec_id, ey), rows in grouped_totals.items():
             meta = metadata_map.get(fec_id, {"office_full": "Unknown", "state": politician.state})
             office = meta["office_full"]
             state = meta["state"]
             
-            # Form clean campaign label
-            if office == "Senate":
-                label = f"Senate - {ey} Election ({state})"
-            elif office == "House":
-                label = f"House - {ey} Election ({state})"
-            elif office == "President":
-                label = f"President - {ey} Campaign"
+            # Generate a descriptive campaign label
+            if office in ("Senate", "House"):
+                label = f"{office} - {ey} Election ({state})"
             else:
                 label = f"{office} - {ey} Campaign"
                 
-            # Find summary row (where cycle is None)
+            # Extract summary stats (or aggregate cycle data if missing)
             summary_row = next((r for r in rows if r.get("cycle") is None), None)
             if summary_row:
                 total_donations = float(summary_row.get("receipts") or 0.0)
@@ -130,7 +121,7 @@ def get_campaign_finance(bioguide_id: str) -> Dict[str, FinanceSummary]:
             else:
                 pct_small = pct_pac = pct_super_pac = 0.0
                 
-            # Build history items
+            # Format the campaign finance history
             history = []
             cycle_rows = sorted([r for r in rows if r.get("cycle") is not None], key=lambda x: x.get("cycle"))
             if not cycle_rows and total_donations > 0:

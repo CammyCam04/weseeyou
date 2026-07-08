@@ -33,12 +33,12 @@ def load_congress_data() -> List[PoliticianDetail]:
         social_resp.raise_for_status()
         social_list = social_resp.json()
         
-        # Index social media entries by bioguide_id
-        social_map: Dict[str, dict] = {}
-        for entry in social_list:
-            bioguide_id = entry.get("id", {}).get("bioguide")
-            if bioguide_id:
-                social_map[bioguide_id] = entry.get("social", {})
+        # Map social media handles to bioguide_id
+        social_map = {
+            entry["id"]["bioguide"]: entry.get("social", {})
+            for entry in social_list
+            if entry.get("id", {}).get("bioguide")
+        }
 
         print("Fetching committees and memberships...")
         committees_url = "https://unitedstates.github.io/congress-legislators/committees-current.json"
@@ -53,21 +53,18 @@ def load_congress_data() -> List[PoliticianDetail]:
         committees_list = committees_resp.json()
         membership_map = membership_resp.json()
 
-        # Map thomas_id -> Committee Name
+        # Build a mapping of thomas_id to committee/subcommittee names
         committee_names: Dict[str, str] = {}
         for c in committees_list:
             thomas_id = c.get("thomas_id")
             name = c.get("name")
             if thomas_id and name:
                 committee_names[thomas_id] = name
-                # Add subcommittees if available
                 for sub in c.get("subcommittees", []):
-                    sub_id = sub.get("thomas_id")
-                    sub_name = sub.get("name")
-                    if sub_id:
-                        committee_names[f"{thomas_id}{sub_id}"] = f"{name} - Subcommittee on {sub_name}"
+                    if sub_id := sub.get("thomas_id"):
+                        committee_names[f"{thomas_id}{sub_id}"] = f"{name} - Subcommittee on {sub.get('name')}"
 
-        # Map Politician Bioguide ID -> list of committee names and titles
+        # Group committee memberships by bioguide_id
         politician_affiliations = defaultdict(list)
         for comm_id, members in membership_map.items():
             committee_title = committee_names.get(comm_id)
@@ -79,10 +76,8 @@ def load_congress_data() -> List[PoliticianDetail]:
                 if not bioguide_id:
                     continue
                 role = m.get("title")
-                if role:
-                    politician_affiliations[bioguide_id].append(f"{committee_title} ({role})")
-                else:
-                    politician_affiliations[bioguide_id].append(committee_title)
+                affiliation = f"{committee_title} ({role})" if role else committee_title
+                politician_affiliations[bioguide_id].append(affiliation)
 
         loaded_politicians = []
         for leg in legislators:
@@ -90,66 +85,51 @@ def load_congress_data() -> List[PoliticianDetail]:
             if not bioguide_id:
                 continue
 
-            # Parse names
             name_info = leg.get("name", {})
             first_name = name_info.get("first", "")
             last_name = name_info.get("last", "")
 
-            # Parse bio details
             bio_info = leg.get("bio", {})
             dob = bio_info.get("birthday", "1970-01-01")
             gender = bio_info.get("gender", "M")
 
-            # Parse current term details
             terms = leg.get("terms", [])
             if not terms:
                 continue
             current_term = terms[-1]
             state = current_term.get("state", "US")
             
-            # Map Chamber
             term_type = current_term.get("type", "rep")
             title = "Senator" if term_type == "sen" else "Representative"
             chamber = Chamber.SENATE if term_type == "sen" else Chamber.HOUSE
 
-            # Map Party
             party_raw = current_term.get("party", "")
-            if party_raw == "Democrat":
-                party = Party.DEMOCRAT
-            elif party_raw == "Republican":
-                party = Party.REPUBLICAN
-            else:
-                party = Party.INDEPENDENT
+            party = (
+                Party.DEMOCRAT if party_raw == "Democrat"
+                else Party.REPUBLICAN if party_raw == "Republican"
+                else Party.INDEPENDENT
+            )
 
-            # Generate profile image URL from the official congressional image library
+            # Official congress profile image URL
             profile_image_url = f"https://unitedstates.github.io/images/congress/225x275/{bioguide_id}.jpg"
 
-            # Parse social handles
             social = social_map.get(bioguide_id, {})
             twitter_account = social.get("twitter")
             facebook_account = social.get("facebook")
             youtube_account = social.get("youtube")
             website_url = current_term.get("url")
 
-            # Parse next election year
             end_date = current_term.get("end", "")
             next_election = end_date[:4] if end_date else None
 
-            # Parse and map official FEC candidate ID
+            # Find the matching Senate/House FEC candidate ID
             fec_ids = leg.get("id", {}).get("fec", [])
             fec_id = None
             if fec_ids:
-                for fid in fec_ids:
-                    if term_type == "sen" and fid.startswith("S"):
-                        fec_id = fid
-                        break
-                    elif term_type == "rep" and fid.startswith("H"):
-                        fec_id = fid
-                        break
-                if not fec_id:
-                    fec_id = fec_ids[-1]
+                prefix = "S" if term_type == "sen" else "H"
+                fec_id = next((fid for fid in fec_ids if fid.startswith(prefix)), fec_ids[-1])
 
-            # Retrieve dynamic real committee memberships
+            # Get committee memberships (fallback to basic title)
             committees = politician_affiliations.get(bioguide_id, [])
             all_affiliations = committees
             if not all_affiliations:
@@ -205,7 +185,6 @@ def load_congress_data() -> List[PoliticianDetail]:
             )
         ]
         
-        # Prepend executive members
         _politicians_cache = executive_members + loaded_politicians
         print(f"Successfully cached {len(_politicians_cache)} current politicians with real committee affiliations.")
         return _politicians_cache

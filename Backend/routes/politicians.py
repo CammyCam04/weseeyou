@@ -17,42 +17,30 @@ def search_politicians(query: Optional[str] = Query(None, description="Search by
     if not query:
         return politicians
     
-    # Clean and split the query into individual search terms
-    query_clean = query.strip().lower()
-    search_terms = query_clean.split()
+    search_terms = query.strip().lower().split()
     if not search_terms:
         return politicians
     
-    results = []
-    for p in politicians:
-        # Create a combined searchable string for this politician
-        searchable_text = f"{p.first_name} {p.last_name} {p.state} {p.party.value} {p.title}".lower()
-        
-        # Ensure every term in the query is found somewhere in the searchable text
-        if all(term in searchable_text for term in search_terms):
-            results.append(p)
-            
-    return results
+    # All query terms must match somewhere in the politician's basic details
+    return [
+        p for p in politicians
+        if all(
+            term in f"{p.first_name} {p.last_name} {p.state} {p.party.value} {p.title}".lower()
+            for term in search_terms
+        )
+    ]
 
 @router.get("/{politician_id}", response_model=PoliticianDetail)
 def get_politician_by_id(politician_id: str):
-    politicians = load_congress_data()
-    for p in politicians:
-        if p.id.lower() == politician_id.lower():
-            return p
-    raise HTTPException(status_code=404, detail="Politician not found")
+    politician = next((p for p in load_congress_data() if p.id.lower() == politician_id.lower()), None)
+    if not politician:
+        raise HTTPException(status_code=404, detail="Politician not found")
+    return politician
 
 @router.get("/{politician_id}/finance", response_model=Dict[str, FinanceSummary])
 def get_politician_finance(politician_id: str):
-    politicians = load_congress_data()
-    found = False
-    for p in politicians:
-        if p.id.lower() == politician_id.lower():
-            found = True
-            break
-    if not found:
+    if not any(p.id.lower() == politician_id.lower() for p in load_congress_data()):
         raise HTTPException(status_code=404, detail="Politician not found")
-    
     return get_campaign_finance(politician_id)
 # endregion
 
