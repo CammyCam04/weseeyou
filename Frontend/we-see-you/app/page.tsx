@@ -1,67 +1,100 @@
-import Image from "next/image";
+"use client";
+
+import { useEffect, useState } from "react";
+import Link from "next/link";
 import styles from "./page.module.scss";
+import { fetchPoliticians, PoliticianSearchItem } from "../lib/api";
+import Avatar from "./components/Avatar/Avatar";
 
 export default function Home() {
+  const [query, setQuery] = useState("");
+  const [politicians, setPoliticians] = useState<PoliticianSearchItem[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const delayDebounce = setTimeout(async () => {
+      setLoading(true);
+      setError(null);
+      try {
+        const data = await fetchPoliticians(query);
+        setPoliticians(data);
+      } catch (err: unknown) {
+        console.error(err);
+        const errorMsg = err instanceof Error ? err.message : "An error occurred while fetching data.";
+        setError(errorMsg);
+      } finally {
+        setLoading(false);
+      }
+    }, 300); // Debounce search to prevent excessive API requests
+
+    return () => clearTimeout(delayDebounce);
+  }, [query]);
+
+  const partyClasses: Record<string, string> = {
+    D: `${styles.badge} ${styles.badgeD}`,
+    R: `${styles.badge} ${styles.badgeR}`,
+    I: `${styles.badge} ${styles.badgeI}`,
+  };
+
+  const partyLabels: Record<string, string> = {
+    D: "Democrat",
+    R: "Republican",
+    I: "Independent",
+  };
+
   return (
     <div className={styles.container}>
-      <main className={styles.main}>
-        <Image
-          className={styles.logo}
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
+      <header className={styles.header}>
+        <h1>We See You</h1>
+        <p>Find and track current politicians, their stances, and controversies.</p>
+      </header>
+
+      <div className={styles.searchBox}>
+        <input
+          type="text"
+          placeholder="Search by name, state, party, or title..."
+          className={styles.input}
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
         />
-        <div className={styles.content}>
-          <h1 className={styles.title}>
-            To get started, edit the page.tsx file.
-          </h1>
-          <p className={styles.description}>
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className={styles.linkInline}
+      </div>
+
+      {loading && <div className={styles.status}>Searching database...</div>}
+
+      {error && <div className={`${styles.status} ${styles.error}`}>{error}</div>}
+
+      {!loading && !error && politicians.length === 0 && (
+        <div className={styles.status}>No politicians found matching your search.</div>
+      )}
+
+      {!loading && !error && politicians.length > 0 && (
+        <div className={styles.grid}>
+          {politicians.map((person) => (
+            <Link
+              key={person.id}
+              href={`/profile/${person.id}`}
+              className={styles.card}
             >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className={styles.linkInline}
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
+              <Avatar
+                src={person.profile_image_url}
+                firstName={person.first_name}
+                lastName={person.last_name}
+                size="small"
+              />
+              <h2 className={styles.name}>
+                {person.first_name} {person.last_name}
+              </h2>
+              <p className={styles.details}>
+                {person.title} &bull; {person.state}
+              </p>
+              <span className={partyClasses[person.party] || partyClasses.I}>
+                {partyLabels[person.party] || partyLabels.I}
+              </span>
+            </Link>
+          ))}
         </div>
-        <div className={styles.actions}>
-          <a
-            className={styles.primaryButton}
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className={styles.logo}
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className={styles.secondaryButton}
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
-        </div>
-      </main>
+      )}
     </div>
   );
 }
-
