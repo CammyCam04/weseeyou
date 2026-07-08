@@ -160,20 +160,39 @@ export default async function ProfilePage({ params }: PageProps) {
 
         {/* Right Column: Key Details */}
         <main className={styles.mainContent}>
-          {/* Key Stances Card */}
+          {/* Recently Sponsored Legislation Card */}
           <section className={styles.section}>
-            <h2>Key Stances & Positions</h2>
-            {politician.stances.length > 0 ? (
-              <ul className={styles.list}>
-                {politician.stances.map((stance, index) => (
-                  <li key={index} className={styles.listItem}>
-                    <span className={styles.bullet}>&bull;</span>
-                    <span>{stance}</span>
-                  </li>
-                ))}
-              </ul>
+            <h2>Recently Sponsored Legislation</h2>
+            {politician.sponsored_legislation && politician.sponsored_legislation.length > 0 ? (
+              <>
+                <ul className={styles.list}>
+                  {politician.sponsored_legislation.map((bill, index) => (
+                    <li key={index} className={styles.listItem}>
+                      <span className={styles.bullet}>&bull;</span>
+                      <div className={styles.billContent}>
+                        <a
+                          href={bill.congress_url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className={styles.billLink}
+                        >
+                          <strong>{bill.bill_number}</strong>: {bill.title}
+                        </a>
+                        <span className={styles.billMeta}>
+                          (Introduced: {bill.introduced_date}) &bull; {bill.latest_action}
+                        </span>
+                      </div>
+                    </li>
+                  ))}
+                </ul>
+                <div className={styles.viewMoreContainer}>
+                  <Link href={`/profile/${id}/legislation`} className={styles.viewMoreBtn}>
+                    View All Sponsored & Voted Legislation &rarr;
+                  </Link>
+                </div>
+              </>
             ) : (
-              <p>No stances recorded for this politician yet.</p>
+              <p>No recently sponsored legislation recorded for this politician yet.</p>
             )}
           </section>
 

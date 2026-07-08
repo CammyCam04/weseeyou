@@ -13,6 +13,14 @@ export interface PoliticianSearchItem {
   profile_image_url?: string;
 }
 
+export interface SponsoredLegislationItem {
+  bill_number: string;
+  title: string;
+  introduced_date: string;
+  latest_action: string;
+  congress_url: string;
+}
+
 export interface PoliticianDetail extends PoliticianSearchItem {
   chamber: Chamber;
   date_of_birth: string;
@@ -23,6 +31,7 @@ export interface PoliticianDetail extends PoliticianSearchItem {
   website_url?: string;
   next_election?: string;
   stances: string[];
+  sponsored_legislation: SponsoredLegislationItem[];
   affiliations: string[];
   controversies: string[];
 }
@@ -128,4 +137,39 @@ export async function fetchPoliticianFinance(id: string): Promise<Record<string,
 
   return response.json();
 }
+
+export interface VotedLegislationItem {
+  bill_number: string;
+  title: string;
+  vote_date: string;
+  vote_position: "YEA" | "NAY" | "PRESENT" | "NOT VOTING";
+  result: string;
+  description: string;
+}
+
+export interface PoliticianLegislationData {
+  politician_name: string;
+  sponsored: SponsoredLegislationItem[];
+  voted: VotedLegislationItem[];
+}
+
+/**
+ * Fetch all sponsored and voted legislation for a politician
+ */
+export async function fetchPoliticianLegislation(id: string): Promise<PoliticianLegislationData> {
+  const response = await fetch(`${API_BASE_URL}/politicians/${id}/legislation`, {
+    method: "GET",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    next: { revalidate: 60 },
+  });
+
+  if (!response.ok) {
+    throw new Error(`Failed to fetch legislation records: ${response.statusText}`);
+  }
+
+  return response.json();
+}
+
 

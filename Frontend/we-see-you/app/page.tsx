@@ -47,7 +47,7 @@ export default function Home() {
     <div className={styles.container}>
       <header className={styles.header}>
         <h1>We See You</h1>
-        <p>Find and track current politicians, their stances, and controversies.</p>
+        <p>Find and track current U.S. politicians, their sponsored legislation, and campaign finance history.</p>
       </header>
 
       <div className={styles.searchBox}>

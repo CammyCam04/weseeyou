@@ -17,6 +17,13 @@ class PoliticianBase(BaseModel):
 class PoliticianSearchItem(PoliticianBase):
     pass
 
+class SponsoredLegislationItem(BaseModel):
+    bill_number: str
+    title: str
+    introduced_date: str
+    latest_action: str
+    congress_url: str
+
 class PoliticianDetail(PoliticianBase):
     chamber: Chamber
     date_of_birth: str
@@ -27,6 +34,7 @@ class PoliticianDetail(PoliticianBase):
     website_url: Optional[str] = None
     next_election: Optional[str] = None
     stances: List[str] = []
+    sponsored_legislation: List[SponsoredLegislationItem] = []
     affiliations: List[str] = []
     controversies: List[str] = []
     fec_id: Optional[str] = None
