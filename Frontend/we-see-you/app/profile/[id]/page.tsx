@@ -2,6 +2,7 @@ import Link from "next/link";
 import styles from "./profile.module.scss";
 import { fetchPoliticianById, fetchPoliticianFinance } from "../../../lib/api";
 import FinanceChart from "../../components/FinanceChart/FinanceChart";
+import PacBreakdown from "../../components/PacBreakdown/PacBreakdown";
 import AffiliationsList from "../../components/AffiliationsList/AffiliationsList";
 import Avatar from "../../components/Avatar/Avatar";
 
@@ -60,6 +61,9 @@ export default async function ProfilePage({ params }: PageProps) {
     }
     return age;
   };
+
+  const firstCampaignKey = finance ? Object.keys(finance)[0] : null;
+  const firstCampaign = firstCampaignKey && finance ? finance[firstCampaignKey] : null;
 
   return (
     <div className={styles.container}>
@@ -160,9 +164,24 @@ export default async function ProfilePage({ params }: PageProps) {
 
         {/* Right Column: Key Details */}
         <main className={styles.mainContent}>
+          {/* Biography & Key Overview Card */}
+          {politician.bio_summary && (
+            <section className={styles.section}>
+              <h2>Biography & Career Overview</h2>
+              <p style={{ lineHeight: 1.6, color: "var(--foreground-muted, #cbd5e1)", fontSize: "0.95rem" }}>
+                {politician.bio_summary}
+              </p>
+            </section>
+          )}
+
           {/* Recently Sponsored Legislation Card */}
           <section className={styles.section}>
-            <h2>Recently Sponsored Legislation</h2>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "0.5rem" }}>
+              <h2 style={{ margin: 0 }}>Recently Sponsored Legislation</h2>
+              <Link href="/about#bill-guide" style={{ fontSize: "0.85rem", color: "#38bdf8", textDecoration: "none", fontWeight: 600 }}>
+                ℹ️ Bill Types Guide
+              </Link>
+            </div>
             {politician.sponsored_legislation && politician.sponsored_legislation.length > 0 ? (
               <>
                 <ul className={styles.list}>
@@ -196,11 +215,14 @@ export default async function ProfilePage({ params }: PageProps) {
             )}
           </section>
 
-          {/* Campaign Finance D3 Card */}
+          {/* Campaign Finance D3 Card & Itemized PACs */}
           {finance && (
             <section className={styles.section}>
-              <h2>Campaign Finance History</h2>
+              <h2>Campaign Finance History & PAC Groups</h2>
               <FinanceChart campaigns={finance} />
+              {firstCampaign && (
+                <PacBreakdown pacs={firstCampaign.pacs} superPacs={firstCampaign.super_pacs} />
+              )}
             </section>
           )}
 

@@ -33,6 +33,8 @@ class PoliticianDetail(PoliticianBase):
     youtube_account: Optional[str] = None
     website_url: Optional[str] = None
     next_election: Optional[str] = None
+    bio_summary: Optional[str] = None
+    wikipedia_id: Optional[str] = None
     stances: List[str] = []
     sponsored_legislation: List[SponsoredLegislationItem] = []
     affiliations: List[str] = []

@@ -8,14 +8,19 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from routes.politicians import router as politicians_router
+from routes.committees import router as committees_router
+from routes.local import router as local_router
+from routes.candidates import router as candidates_router
 from services.legislator_service import load_congress_data
+from services.committee_service import load_committees
 # endregion
 
 # region Lifespan Handler
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # Pre-load and cache Congress data on startup
+    # Pre-load and cache Congress data & committees on startup
     load_congress_data()
+    load_committees()
     yield
 # endregion
 
@@ -41,6 +46,9 @@ app.add_middleware(
 
 # region Include Routers
 app.include_router(politicians_router, prefix="/api")
+app.include_router(committees_router, prefix="/api")
+app.include_router(local_router, prefix="/api")
+app.include_router(candidates_router, prefix="/api")
 # endregion
 
 # region Base Routes

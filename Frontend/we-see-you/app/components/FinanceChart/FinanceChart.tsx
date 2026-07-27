@@ -29,14 +29,12 @@ export default function FinanceChart({ campaigns }: FinanceChartProps) {
   });
 
   const [selectedCampaignKey, setSelectedCampaignKey] = useState<string>(keys[0] || "");
-  const [prevSelectedCampaignKey, setPrevSelectedCampaignKey] = useState<string>(keys[0] || "");
 
-  // Reset expanded states when selected campaign changes (during render to avoid useEffect warning)
-  if (selectedCampaignKey !== prevSelectedCampaignKey) {
-    setPrevSelectedCampaignKey(selectedCampaignKey);
+  const handleCampaignChange = (key: string) => {
+    setSelectedCampaignKey(key);
     setExpandedDonors(new Set());
     setIsDonorsExpanded(false);
-  }
+  };
 
   // Safe fallback if selectedCampaignKey is not in campaigns
   const activeKey = campaigns[selectedCampaignKey] ? selectedCampaignKey : keys[0] || "";
@@ -192,7 +190,7 @@ export default function FinanceChart({ campaigns }: FinanceChartProps) {
             id="campaign-select"
             className={styles.campaignSelector}
             value={activeKey}
-            onChange={(e) => setSelectedCampaignKey(e.target.value)}
+            onChange={(e) => handleCampaignChange(e.target.value)}
           >
             {keys.map((k) => (
               <option key={k} value={k}>

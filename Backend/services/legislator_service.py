@@ -135,6 +135,8 @@ def load_congress_data() -> List[PoliticianDetail]:
             if not all_affiliations:
                 all_affiliations = [f"Member of the U.S. {title} from {state}"]
 
+            wikipedia_id = leg.get("id", {}).get("wikipedia")
+
             politician = PoliticianDetail(
                 id=bioguide_id,
                 first_name=first_name,
@@ -151,6 +153,7 @@ def load_congress_data() -> List[PoliticianDetail]:
                 youtube_account=youtube_account,
                 website_url=website_url,
                 next_election=next_election,
+                wikipedia_id=wikipedia_id,
                 stances=[],
                 affiliations=all_affiliations,
                 controversies=[],

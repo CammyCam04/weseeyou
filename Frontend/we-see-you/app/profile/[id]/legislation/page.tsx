@@ -70,33 +70,38 @@ export default async function LegislationPage({ params }: PageProps) {
           )}
         </section>
 
-        {/* Right Column: Voting Record */}
+        {/* Right Column: Co-sponsored & Supported Legislation */}
         <section className={styles.card}>
-          <h2>Recent Voting Record ({data.voted.length})</h2>
-          <p className={styles.helperText}>Bipartisan and key roll call votes on major legislation.</p>
+          <h2>Co-Sponsored & Supported Bills ({data.voted.length})</h2>
+          <p className={styles.helperText}>Official co-sponsored bills backed and introduced with this legislator from Congress.gov.</p>
           
           {data.voted.length > 0 ? (
             <ul className={styles.list}>
               {data.voted.map((vote, index) => {
-                const badgeClass = vote.vote_position === "YEA" ? `${styles.badge} ${styles.yea}` : `${styles.badge} ${styles.nay}`;
+                const badgeClass = `${styles.badge} ${styles.yea}`;
                 return (
                   <li key={index} className={styles.listItem}>
                     <div className={styles.voteHeader}>
-                      <span className={styles.billNumber}>{vote.bill_number}</span>
+                      {'congress_url' in vote && vote.congress_url ? (
+                        <a href={vote.congress_url as string} target="_blank" rel="noopener noreferrer" className={styles.billNumberLink}>
+                          {vote.bill_number}
+                        </a>
+                      ) : (
+                        <span className={styles.billNumber}>{vote.bill_number}</span>
+                      )}
                       <span className={badgeClass}>{vote.vote_position}</span>
                     </div>
                     <h3 className={styles.billTitle}>{vote.title}</h3>
                     <p className={styles.voteDescription}>{vote.description}</p>
                     <div className={styles.voteFooter}>
-                      <span>Result: <strong>{vote.result}</strong></span>
-                      <span>Voted on: {vote.vote_date}</span>
+                      <span>Date: <strong>{vote.vote_date}</strong></span>
                     </div>
                   </li>
                 );
               })}
             </ul>
           ) : (
-            <p className={styles.emptyMsg}>No recent voting records available.</p>
+            <p className={styles.emptyMsg}>No recent co-sponsored bill records available.</p>
           )}
         </section>
       </div>

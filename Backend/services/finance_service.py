@@ -3,7 +3,7 @@ import os
 import requests
 from collections import defaultdict
 from typing import Dict, List
-from models import FinanceSummary, FinanceHistoryItem, DonorItem
+from models import FinanceSummary, FinanceHistoryItem, DonorItem, PacItem
 from services.legislator_service import load_congress_data
 # endregion
 
@@ -86,6 +86,61 @@ def _get_top_employers(committee_ids: List[str], cycle: int) -> List[DonorItem]:
         DonorItem(name=name, amount=round(total, 2), contributors=[])
         for name, total in sorted_employers
     ]
+
+
+def _get_itemized_pacs(committee_ids: List[str]):
+    """
+    Fetches itemized PAC and Super PAC contributions for candidate committees from OpenFEC Schedule A.
+    Returns (pacs_list, super_pacs_list).
+    """
+    if not FEC_API_KEY or not committee_ids:
+        return [], []
+
+    pac_totals = defaultdict(float)
+    super_pac_totals = defaultdict(float)
+
+    for comm_id in committee_ids:
+        try:
+            url = "https://api.open.fec.gov/v1/schedules/schedule_a/"
+            params = {
+                "api_key": FEC_API_KEY,
+                "committee_id": comm_id,
+                "is_individual": "false",
+                "per_page": 50,
+                "sort": "-contribution_receipt_amount"
+            }
+            resp = requests.get(url, params=params, timeout=5)
+            if resp.status_code == 200:
+                for row in resp.json().get("results", []):
+                    raw_name = row.get("contributor_name") or "Unknown PAC"
+                    amt = float(row.get("contribution_receipt_amount") or 0.0)
+                    if amt <= 0:
+                        continue
+
+                    name = raw_name.strip().title()
+                    name_upper = name.upper()
+
+                    if any(kw in name_upper for kw in ("SUPER PAC", "ACTION", "VICTORY", "INDEPENDENT EXPENDITURE")):
+                        super_pac_totals[name] += amt
+                    else:
+                        pac_totals[name] += amt
+        except Exception as ex:
+            print(f"Error fetching PACs for committee {comm_id}: {ex}")
+
+    total_pac_sum = sum(pac_totals.values())
+    total_super_pac_sum = sum(super_pac_totals.values())
+
+    pacs = []
+    for name, amt in sorted(pac_totals.items(), key=lambda x: x[1], reverse=True)[:10]:
+        pct = (amt / total_pac_sum * 100.0) if total_pac_sum > 0 else 0.0
+        pacs.append(PacItem(name=name, type="Traditional PAC", amount=round(amt, 2), percentage=round(pct, 1)))
+
+    super_pacs = []
+    for name, amt in sorted(super_pac_totals.items(), key=lambda x: x[1], reverse=True)[:10]:
+        pct = (amt / total_super_pac_sum * 100.0) if total_super_pac_sum > 0 else 0.0
+        super_pacs.append(PacItem(name=name, type="Super PAC / Action Fund", amount=round(amt, 2), percentage=round(pct, 1)))
+
+    return pacs, super_pacs
 
 
 # region Main Finance Service
@@ -219,9 +274,10 @@ def get_campaign_finance(bioguide_id: str) -> Dict[str, FinanceSummary]:
                         )
                     )
             
-            # Query top contributing employers from FEC
+            # Query top contributing employers and itemized PACs from FEC
             committee_ids = _get_candidate_committees(fec_id)
             donors = _get_top_employers(committee_ids, ey)
+            pacs, super_pacs = _get_itemized_pacs(committee_ids)
                     
             campaigns[label] = FinanceSummary(
                 id=bioguide_id,
@@ -233,7 +289,9 @@ def get_campaign_finance(bioguide_id: str) -> Dict[str, FinanceSummary]:
                 pac_donations_pct=round(pct_pac, 1),
                 super_pac_donations_pct=round(pct_super_pac, 1),
                 history=history,
-                donors=donors
+                donors=donors,
+                pacs=pacs,
+                super_pacs=super_pacs
             )
             
     _finance_cache[bioguide_id] = campaigns

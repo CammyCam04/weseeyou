@@ -30,6 +30,8 @@ export interface PoliticianDetail extends PoliticianSearchItem {
   youtube_account?: string;
   website_url?: string;
   next_election?: string;
+  bio_summary?: string;
+  wikipedia_id?: string;
   stances: string[];
   sponsored_legislation: SponsoredLegislationItem[];
   affiliations: string[];
@@ -102,6 +104,14 @@ export interface FinanceHistoryItem {
   super_pac_donations: number;
 }
 
+export interface PacItem {
+  name: string;
+  type: string;
+  amount: number;
+  percentage: number;
+  date?: string;
+}
+
 export interface FinanceSummary {
   id: string;
   candidate_id: string;
@@ -113,6 +123,8 @@ export interface FinanceSummary {
   super_pac_donations_pct: number;
   history: FinanceHistoryItem[];
   donors: DonorItem[];
+  pacs?: PacItem[];
+  super_pacs?: PacItem[];
 }
 
 
@@ -167,6 +179,206 @@ export async function fetchPoliticianLegislation(id: string): Promise<Politician
 
   if (!response.ok) {
     throw new Error(`Failed to fetch legislation records: ${response.statusText}`);
+  }
+
+  return response.json();
+}
+
+export interface CommitteeMemberItem {
+  bioguide_id: string;
+  first_name: string;
+  last_name: string;
+  role: string;
+  party: Party;
+  state: string;
+  title: string;
+  profile_image_url?: string;
+}
+
+export interface SubcommitteeItem {
+  id: string;
+  name: string;
+}
+
+export interface CommitteeBillItem {
+  bill_number: string;
+  title: string;
+  relationship_type: string;
+  action_date: string;
+  congress_url: string;
+}
+
+export interface CommitteeSearchItem {
+  id: string;
+  name: string;
+  chamber: Chamber;
+  type: string;
+  member_count: number;
+  subcommittee_count: number;
+  chair_name?: string;
+  ranking_member_name?: string;
+}
+
+export interface CommitteeDetail extends CommitteeSearchItem {
+  website_url?: string;
+  members: CommitteeMemberItem[];
+  subcommittees: SubcommitteeItem[];
+  bills: CommitteeBillItem[];
+}
+
+/**
+ * Fetch list of committees with optional search query and chamber filter
+ */
+export async function fetchCommittees(query?: string, chamber?: string): Promise<CommitteeSearchItem[]> {
+  const url = new URL(`${API_BASE_URL}/committees`);
+  if (query) {
+    url.searchParams.append("query", query);
+  }
+  if (chamber) {
+    url.searchParams.append("chamber", chamber);
+  }
+
+  const response = await fetch(url.toString(), {
+    method: "GET",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    next: { revalidate: 60 },
+  });
+
+  if (!response.ok) {
+    throw new Error(`Failed to fetch committees: ${response.statusText}`);
+  }
+
+  return response.json();
+}
+
+/**
+ * Fetch detail of a committee by ID
+ */
+export async function fetchCommitteeById(id: string): Promise<CommitteeDetail> {
+  const response = await fetch(`${API_BASE_URL}/committees/${id}`, {
+    method: "GET",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    next: { revalidate: 60 },
+  });
+
+  if (!response.ok) {
+    if (response.status === 404) {
+      throw new Error(`Committee ${id} not found`);
+    }
+    throw new Error(`Failed to fetch committee detail: ${response.statusText}`);
+  }
+
+  return response.json();
+}
+
+export interface CandidateItem {
+  id: string;
+  name: string;
+  office: string;
+  state: string;
+  district?: string;
+  party: string;
+  is_incumbent: boolean;
+  fec_id?: string;
+}
+
+export interface CivicOfficialItem {
+  id?: string;
+  name: string;
+  office_title: string;
+  level: string;
+  party?: string;
+  phones: string[];
+  urls: string[];
+  photo_url?: string;
+}
+
+export interface LocalLookupResponse {
+  state: string;
+  district?: string;
+  incumbents: PoliticianDetail[];
+  running_candidates: CandidateItem[];
+  township_candidates: CandidateItem[];
+  civic_officials: CivicOfficialItem[];
+}
+
+/**
+ * Fetch local elections, incumbents, and running candidates by State, District, or Address
+ */
+export async function fetchLocalElections(
+  state: string,
+  district?: string,
+  address?: string
+): Promise<LocalLookupResponse> {
+  const url = new URL(`${API_BASE_URL}/local`);
+  url.searchParams.append("state", state);
+  if (district) url.searchParams.append("district", district);
+  if (address) url.searchParams.append("address", address);
+
+  const response = await fetch(url.toString(), {
+    method: "GET",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    next: { revalidate: 60 },
+  });
+
+  if (!response.ok) {
+    throw new Error(`Failed to fetch local election records: ${response.statusText}`);
+  }
+
+  return response.json();
+}
+
+export interface PolicyStanceItem {
+  category: string;
+  position: string;
+  details: string;
+}
+
+export interface CandidateDetailResponse {
+  id: string;
+  name: string;
+  office: string;
+  state: string;
+  district?: string;
+  party: string;
+  is_incumbent: boolean;
+  fec_id?: string;
+  election_year?: string;
+  bio_summary?: string;
+  contact_email?: string;
+  website_url?: string;
+  total_spent?: number;
+  cash_on_hand?: number;
+  debts_owed?: number;
+  policy_stances?: PolicyStanceItem[];
+  endorsements?: string[];
+  finance?: FinanceSummary;
+  sponsored_bills: SponsoredLegislationItem[];
+}
+
+/**
+ * Fetch running candidate detail profile by Candidate ID
+ */
+export async function fetchCandidateById(candidateId: string): Promise<CandidateDetailResponse> {
+  const response = await fetch(`${API_BASE_URL}/candidates/${candidateId}`, {
+    method: "GET",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    next: { revalidate: 60 },
+  });
+
+  if (!response.ok) {
+    if (response.status === 404) {
+      throw new Error(`Candidate record ${candidateId} not found`);
+    }
+    throw new Error(`Failed to fetch candidate profile: ${response.statusText}`);
   }
 
   return response.json();
