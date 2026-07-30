@@ -1,6 +1,8 @@
 import Link from "next/link";
 import { fetchCommitteeById } from "../../../lib/api";
 import Avatar from "../../components/Avatar/Avatar";
+import { HugeiconsIcon } from "@hugeicons/react";
+import { ArrowLeft01Icon, ArrowRight01Icon } from "@hugeicons/core-free-icons";
 import styles from "./committee_detail.module.scss";
 
 interface PageProps {
@@ -35,7 +37,7 @@ export default async function CommitteeDetailPage({ params }: PageProps) {
   return (
     <div className={styles.container}>
       <Link href="/committees" className={styles.backLink}>
-        &larr; Back to Committees List
+        <HugeiconsIcon icon={ArrowLeft01Icon} size={18} /> Back to Committees List
       </Link>
 
       {/* Header Card */}
@@ -51,7 +53,7 @@ export default async function CommitteeDetailPage({ params }: PageProps) {
               rel="noopener noreferrer"
               className={styles.websiteBtn}
             >
-              Official Website &rarr;
+              Official Website <HugeiconsIcon icon={ArrowRight01Icon} size={14} />
             </a>
           )}
         </div>

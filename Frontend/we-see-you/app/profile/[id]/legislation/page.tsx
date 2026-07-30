@@ -1,4 +1,6 @@
 import Link from "next/link";
+import { HugeiconsIcon } from "@hugeicons/react";
+import { ArrowLeft01Icon } from "@hugeicons/core-free-icons";
 import { fetchPoliticianLegislation } from "../../../../lib/api";
 import styles from "./legislation.module.scss";
 
@@ -25,7 +27,7 @@ export default async function LegislationPage({ params }: PageProps) {
         <h2>Error Loading Records</h2>
         <p>{errorMsg || "The legislation records for this politician could not be found."}</p>
         <Link href={`/profile/${id}`} className={styles.backLink}>
-          &larr; Back to Profile
+          <HugeiconsIcon icon={ArrowLeft01Icon} size={18} /> Back to Profile
         </Link>
       </div>
     );
@@ -34,7 +36,7 @@ export default async function LegislationPage({ params }: PageProps) {
   return (
     <div className={styles.container}>
       <Link href={`/profile/${id}`} className={styles.backLink}>
-        &larr; Back to {data.politician_name}&apos;s Profile
+        <HugeiconsIcon icon={ArrowLeft01Icon} size={18} /> Back to {data.politician_name}&apos;s Profile
       </Link>
 
       <header className={styles.header}>

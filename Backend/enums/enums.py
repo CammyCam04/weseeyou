@@ -12,4 +12,5 @@ class Chamber(str, Enum):
     SENATE = "Senate"
     HOUSE = "House"
     EXECUTIVE = "Executive"
+    JUDICIAL = "Judicial"
 # endregion

@@ -1,28 +1,24 @@
+// app/components/FinanceChart/FinanceChart.module.scss
+@use "../../styles/variables" as *;
+@use "../../styles/mixins" as *;
+
 .financeWrapper {
-  margin-top: 2rem;
+  margin-top: 1.5rem;
   display: flex;
   flex-direction: column;
-  gap: 2rem;
+  gap: 1.5rem;
   width: 100%;
 }
 
 .financeContainer {
+  @include card-base;
   display: flex;
   flex-direction: column;
-  gap: 2rem;
-  background-color: #ffffff;
-  border-radius: 1.25rem;
-  border: 1px solid #e5e7eb;
-  padding: 2rem;
+  gap: 1.5rem;
 
   @media (min-width: 768px) {
     flex-direction: row;
     align-items: center;
-  }
-
-  @media (prefers-color-scheme: dark) {
-    background-color: #111827;
-    border-color: #1f2937;
   }
 }
 
@@ -37,74 +33,57 @@
   width: 100%;
   display: flex;
   flex-direction: column;
-  justify-content: center;
 
   h3 {
-    font-size: 1.25rem;
+    font-size: 1.1rem;
     font-weight: 700;
-    color: #111827;
+    color: var(--foreground);
     margin: 0 0 0.5rem 0;
-
-    @media (prefers-color-scheme: dark) {
-      color: #f9fafb;
-    }
   }
 }
 
 .totalRaised {
-  font-size: 1.1rem;
-  color: #4b5563;
-  margin: 0 0 1.5rem 0;
+  font-size: 1rem;
+  color: var(--foreground-secondary);
+  margin: 0 0 1.25rem 0;
 
   strong {
-    color: #111827;
-    font-size: 1.35rem;
-
-    @media (prefers-color-scheme: dark) {
-      color: #f9fafb;
-    }
-  }
-
-  @media (prefers-color-scheme: dark) {
-    color: #9ca3af;
+    color: var(--foreground);
+    font-size: 1.25rem;
   }
 }
 
 .statList {
   display: flex;
   flex-direction: column;
-  gap: 1rem;
+  gap: 0.75rem;
 }
 
 .statItem {
   display: flex;
   align-items: center;
-  font-size: 0.95rem;
-  color: #374151;
-
-  @media (prefers-color-scheme: dark) {
-    color: #d1d5db;
-  }
+  font-size: 0.9rem;
+  color: var(--foreground);
 }
 
 .colorIndicator {
-  width: 14px;
-  height: 14px;
-  border-radius: 4px;
-  margin-right: 0.75rem;
+  width: 12px;
+  height: 12px;
+  border-radius: $radius-sm;
+  margin-right: 0.65rem;
   flex-shrink: 0;
 }
 
 .bgSmall {
-  background-color: #10b981;
+  background-color: $color-success;
 }
 
 .bgPac {
-  background-color: #3b82f6;
+  background-color: $color-accent;
 }
 
 .bgSuperPac {
-  background-color: #8b5cf6;
+  background-color: #a855f7;
 }
 
 .categoryLabel {
@@ -114,172 +93,108 @@
 
 .categoryPct {
   font-weight: 700;
-  font-size: 1.1rem;
-  color: #111827;
+  font-size: 1rem;
+  color: var(--foreground);
   margin-left: 1rem;
-
-  @media (prefers-color-scheme: dark) {
-    color: #f9fafb;
-  }
 }
 
-/* Donors List Section Styling */
 .donorsSection {
-  background-color: #ffffff;
-  border-radius: 1.25rem;
-  border: 1px solid #e5e7eb;
-  padding: 2rem;
+  @include card-base;
   display: flex;
   flex-direction: column;
 
   h4 {
-    font-size: 1.25rem;
+    font-size: 1.1rem;
     font-weight: 700;
-    color: #111827;
-    margin: 0 0 0.5rem 0;
-
-    @media (prefers-color-scheme: dark) {
-      color: #f9fafb;
-    }
-  }
-
-  @media (prefers-color-scheme: dark) {
-    background-color: #111827;
-    border-color: #1f2937;
+    color: var(--foreground);
+    margin: 0 0 0.35rem 0;
   }
 }
 
 .helperText {
-  font-size: 0.875rem;
-  color: #6b7280;
-  margin: 0 0 1.5rem 0;
-
-  @media (prefers-color-scheme: dark) {
-    color: #9ca3af;
-  }
+  font-size: 0.85rem;
+  color: var(--foreground-secondary);
+  margin: 0 0 1.25rem 0;
 }
 
 .donorsList {
   display: flex;
   flex-direction: column;
-  margin-bottom: 1.5rem;
+  margin-bottom: 1.25rem;
   width: 100%;
-  border: 1px solid #e5e7eb;
-  border-radius: 0.75rem;
+  border: 1px solid var(--border-color);
+  border-radius: $radius-sm;
   overflow: hidden;
-
-  @media (prefers-color-scheme: dark) {
-    border-color: #1f2937;
-  }
 }
 
 .donorGroup {
   display: flex;
   flex-direction: column;
-  border-bottom: 1px solid #e5e7eb;
+  border-bottom: 1px solid var(--border-color);
 
   &:last-child {
     border-bottom: none;
   }
-
-  @media (prefers-color-scheme: dark) {
-    border-bottom-color: #1f2937;
-  }
 }
 
 .donorRow {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 1rem;
-  font-size: 0.975rem;
+  @include flex-between;
+  padding: 0.75rem 1rem;
+  font-size: 0.9rem;
   cursor: pointer;
-  background-color: #ffffff;
+  background-color: var(--card-bg);
   transition: background-color 0.15s ease;
   user-select: none;
 
   &:hover {
-    background-color: #f9fafb;
-  }
-
-  @media (prefers-color-scheme: dark) {
-    background-color: #111827;
-    
-    &:hover {
-      background-color: #1f2937;
-    }
+    background-color: rgba($color-accent, 0.05);
   }
 }
 
 .activeRow {
-  background-color: #f3f4f6;
+  background-color: rgba($color-accent, 0.08);
   font-weight: 700;
-
-  @media (prefers-color-scheme: dark) {
-    background-color: #1f2937;
-  }
 }
 
 .donorName {
   font-weight: 600;
-  color: #374151;
+  color: var(--foreground);
   display: flex;
   align-items: center;
   gap: 0.5rem;
-
-  @media (prefers-color-scheme: dark) {
-    color: #d1d5db;
-  }
 }
 
 .arrow {
   display: inline-block;
-  font-size: 0.75rem;
-  color: #9ca3af;
+  font-size: 0.7rem;
+  color: var(--foreground-muted);
   width: 12px;
 }
 
 .donorAmount {
   font-weight: 700;
-  color: #111827;
-
-  @media (prefers-color-scheme: dark) {
-    color: #f9fafb;
-  }
+  color: var(--foreground);
 }
 
-/* Nested Contributors Styling */
 .contributorsList {
-  background-color: #f9fafb;
-  padding: 0.5rem 1rem 0.5rem 2.5rem;
+  background-color: var(--background);
+  padding: 0.5rem 1rem 0.5rem 2rem;
   display: flex;
   flex-direction: column;
-  gap: 0.5rem;
-  border-top: 1px solid #e5e7eb;
-  border-bottom: 1px solid #e5e7eb;
-
-  @media (prefers-color-scheme: dark) {
-    background-color: #0b0f19;
-    border-color: #1f2937;
-  }
+  gap: 0.4rem;
+  border-top: 1px solid var(--border-color);
+  border-bottom: 1px solid var(--border-color);
 }
 
 .contribRow {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 0.5rem 0;
-  font-size: 0.875rem;
-  color: #4b5563;
-  border-bottom: 1px dashed #e5e7eb;
+  @include flex-between;
+  padding: 0.4rem 0;
+  font-size: 0.85rem;
+  color: var(--foreground-secondary);
+  border-bottom: 1px dashed var(--border-color);
 
   &:last-child {
     border-bottom: none;
-  }
-
-  @media (prefers-color-scheme: dark) {
-    color: #9ca3af;
-    border-bottom-color: #1f2937;
   }
 }
 
@@ -289,53 +204,27 @@
 
 .contribAmount {
   font-weight: 600;
-  color: #374151;
-
-  @media (prefers-color-scheme: dark) {
-    color: #d1d5db;
-  }
+  color: var(--foreground);
 }
 
 .toggleBtn {
+  @include btn-base;
   align-self: flex-start;
-  background: none;
-  border: 1px solid #d1d5db;
-  color: #374151;
-  padding: 0.5rem 1rem;
-  font-size: 0.875rem;
-  font-weight: 600;
-  border-radius: 0.5rem;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  outline: none;
+  background-color: rgba($color-border-dark, 0.2);
+  color: var(--foreground);
+  border: 1px solid var(--border-color);
+  padding: 0.45rem 0.85rem;
+  font-size: 0.825rem;
 
   &:hover {
-    background-color: #f3f4f6;
-    border-color: #9ca3af;
-    color: #111827;
-  }
-
-  @media (prefers-color-scheme: dark) {
-    border-color: #374151;
-    color: #d1d5db;
-
-    &:hover {
-      background-color: #1f2937;
-      border-color: #4b5563;
-      color: #f9fafb;
-    }
+    border-color: $color-accent;
   }
 }
 
-/* D3 SVG element specific styling */
 .gridlines {
   line {
-    stroke: #e5e7eb;
+    stroke: var(--border-color);
     stroke-dasharray: 3 3;
-
-    @media (prefers-color-scheme: dark) {
-      stroke: #374151;
-    }
   }
   path {
     stroke-width: 0;
@@ -344,68 +233,43 @@
 
 .axis {
   font-size: 0.75rem;
-  color: #6b7280;
+  color: var(--foreground-muted);
 
   path, line {
-    stroke: #d1d5db;
-
-    @media (prefers-color-scheme: dark) {
-      stroke: #374151;
-    }
-  }
-
-  @media (prefers-color-scheme: dark) {
-    color: #9ca3af;
+    stroke: var(--border-color);
   }
 }
 
 .selectorContainer {
   display: flex;
   flex-direction: column;
-  gap: 0.5rem;
+  gap: 0.4rem;
   margin-bottom: 1rem;
   width: 100%;
 
   label {
     font-size: 0.75rem;
     font-weight: 700;
-    color: #4b5563;
+    color: var(--foreground-muted);
     text-transform: uppercase;
     letter-spacing: 0.05em;
-
-    @media (prefers-color-scheme: dark) {
-      color: #9ca3af;
-    }
   }
 }
 
 .campaignSelector {
   width: 100%;
   max-width: 450px;
-  padding: 0.75rem 1rem;
-  font-size: 0.95rem;
+  padding: 0.65rem 1rem;
+  font-size: 0.9rem;
   font-weight: 600;
-  color: #111827;
-  background-color: #ffffff;
-  border: 1px solid #e5e7eb;
-  border-radius: 0.75rem;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+  color: var(--foreground);
+  background-color: var(--card-bg);
+  border: 1px solid var(--border-color);
+  border-radius: $radius-sm;
   cursor: pointer;
   outline: none;
-  transition: border-color 0.15s ease, box-shadow 0.15s ease;
 
   &:focus {
-    border-color: #3b82f6;
-    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15);
-  }
-
-  @media (prefers-color-scheme: dark) {
-    color: #f9fafb;
-    background-color: #1f2937;
-    border-color: #374151;
-
-    &:focus {
-      border-color: #3b82f6;
-    }
+    border-color: $color-accent;
   }
 }

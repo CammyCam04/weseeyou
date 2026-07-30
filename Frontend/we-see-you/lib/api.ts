@@ -1,7 +1,7 @@
 // TypeScript types matching the backend models
 
 export type Party = "D" | "R" | "I";
-export type Chamber = "Senate" | "House" | "Executive";
+export type Chamber = "Senate" | "House" | "Executive" | "Judicial";
 
 export interface PoliticianSearchItem {
   id: string;
@@ -10,6 +10,7 @@ export interface PoliticianSearchItem {
   title: string;
   state: string;
   party: Party;
+  chamber: Chamber;
   profile_image_url?: string;
 }
 
@@ -379,6 +380,68 @@ export async function fetchCandidateById(candidateId: string): Promise<Candidate
       throw new Error(`Candidate record ${candidateId} not found`);
     }
     throw new Error(`Failed to fetch candidate profile: ${response.statusText}`);
+  }
+
+  return response.json();
+}
+
+export interface JudicialOpinionItem {
+  case_name: string;
+  year?: string;
+  vote_count?: string;
+  opinion_type?: string;
+  summary: string;
+  topic?: string;
+  url?: string;
+}
+
+export interface JudgeBase {
+  id: string;
+  first_name: string;
+  last_name: string;
+  title: string;
+  state: string;
+  court_name: string;
+  profile_image_url?: string;
+}
+
+export interface JudgeDetail extends JudgeBase {
+  date_of_birth?: string;
+  gender?: string;
+  website_url?: string;
+  tenure_type?: string;
+  bio_summary?: string;
+  wikipedia_id?: string;
+  opinions: JudicialOpinionItem[];
+  controversies: string[];
+}
+
+export async function fetchJudges(query?: string): Promise<JudgeBase[]> {
+  const url = new URL(`${API_BASE_URL}/judges`);
+  if (query) url.searchParams.append("query", query);
+
+  const response = await fetch(url.toString(), {
+    method: "GET",
+    headers: { "Content-Type": "application/json" },
+    next: { revalidate: 60 },
+  });
+
+  if (!response.ok) {
+    throw new Error(`Failed to fetch judicial roster: ${response.statusText}`);
+  }
+
+  return response.json();
+}
+
+export async function fetchJudgeById(judgeId: string): Promise<JudgeDetail> {
+  const response = await fetch(`${API_BASE_URL}/judges/${judgeId}`, {
+    method: "GET",
+    headers: { "Content-Type": "application/json" },
+    next: { revalidate: 60 },
+  });
+
+  if (!response.ok) {
+    throw new Error(`Failed to fetch judicial profile: ${response.statusText}`);
   }
 
   return response.json();

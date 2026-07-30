@@ -1,7 +1,7 @@
-// app/page.module.scss
+// app/judiciary/judiciary.module.scss
 @use "sass:color";
-@use "./styles/variables" as *;
-@use "./styles/mixins" as *;
+@use "../styles/variables" as *;
+@use "../styles/mixins" as *;
 
 .container {
   max-width: 1280px;
@@ -185,19 +185,6 @@
     font-size: 0.8rem;
     color: var(--foreground-muted);
   }
-}
-
-// Party Badges
-.badgeD {
-  @include badge-democrat;
-}
-
-.badgeR {
-  @include badge-republican;
-}
-
-.badgeI {
-  @include badge-independent;
 }
 
 .status {

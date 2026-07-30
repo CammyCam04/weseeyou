@@ -1,31 +1,32 @@
+// app/candidate/[id]/candidate_profile.module.scss
+@use "../../styles/variables" as *;
+@use "../../styles/mixins" as *;
+
 .container {
   max-width: 1200px;
   margin: 0 auto;
-  padding: 2.5rem 1.5rem 4rem;
+  padding: 2.5rem 1.5rem;
 }
 
 .backLink {
   display: inline-flex;
   align-items: center;
   gap: 0.5rem;
-  color: #38bdf8;
+  color: var(--foreground-secondary);
   text-decoration: none;
-  font-size: 0.95rem;
+  font-size: 0.875rem;
   font-weight: 600;
-  margin-bottom: 2rem;
-  transition: transform 0.2s ease;
+  margin-bottom: 1.5rem;
+  transition: color 0.15s ease;
 
   &:hover {
-    transform: translateX(-4px);
+    color: var(--foreground);
   }
 }
 
 .headerCard {
-  background: rgba(30, 41, 59, 0.5);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 16px;
-  padding: 2.5rem;
-  margin-bottom: 2.5rem;
+  @include card-base;
+  margin-bottom: 2rem;
   display: flex;
   flex-direction: column;
   gap: 0.85rem;
@@ -37,88 +38,70 @@
   }
 
   .partyBadge {
-    font-size: 0.8rem;
-    font-weight: 700;
-    padding: 0.25rem 0.65rem;
-    border-radius: 6px;
-    text-transform: uppercase;
+    @include party-badge-base;
 
     &.republican {
-      background: rgba(239, 68, 68, 0.15);
-      color: #f87171;
-      border: 1px solid rgba(239, 68, 68, 0.3);
+      @include badge-republican;
     }
 
     &.democrat {
-      background: rgba(59, 130, 246, 0.15);
-      color: #60a5fa;
-      border: 1px solid rgba(59, 130, 246, 0.3);
+      @include badge-democrat;
     }
 
     &.other {
-      background: rgba(168, 85, 247, 0.15);
-      color: #c084fc;
-      border: 1px solid rgba(168, 85, 247, 0.3);
+      @include badge-independent;
     }
   }
 
   .name {
-    font-size: 2.5rem;
+    font-size: 2.2rem;
     font-weight: 800;
-    color: #f8fafc;
+    color: var(--foreground);
     margin: 0;
     letter-spacing: -0.025em;
   }
 
   .officeText {
-    font-size: 1.2rem;
-    color: #38bdf8;
+    font-size: 1.1rem;
+    color: $color-accent;
     font-weight: 600;
   }
 
   .actionBtns {
     display: flex;
     align-items: center;
-    gap: 1rem;
+    gap: 0.75rem;
     margin-top: 0.5rem;
     flex-wrap: wrap;
   }
 
   .btn {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.5rem;
-    padding: 0.55rem 1.1rem;
-    border-radius: 8px;
-    font-size: 0.9rem;
-    font-weight: 600;
-    text-decoration: none;
-    transition: all 0.2s ease;
+    @include btn-base;
 
     &.primary {
-      background: #38bdf8;
-      color: #0f172a;
+      background-color: $color-accent;
+      color: #ffffff;
 
       &:hover {
-        background: #7dd3fc;
+        background-color: $color-accent-hover;
       }
     }
 
     &.secondary {
-      background: rgba(255, 255, 255, 0.06);
-      color: #f8fafc;
-      border: 1px solid rgba(255, 255, 255, 0.1);
+      background-color: rgba($color-border-dark, 0.3);
+      color: var(--foreground);
+      border: 1px solid var(--border-color);
 
       &:hover {
-        background: rgba(255, 255, 255, 0.12);
+        border-color: $color-accent;
       }
     }
   }
 
   .fecTag {
-    font-size: 0.85rem;
-    color: #94a3b8;
-    font-family: var(--font-geist-mono, monospace);
+    font-size: 0.8rem;
+    color: var(--foreground-muted);
+    font-family: $font-family-mono;
   }
 }
 
@@ -126,61 +109,55 @@
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
   gap: 1.25rem;
-  margin-bottom: 2.5rem;
+  margin-bottom: 2rem;
 }
 
 .metricCard {
-  background: rgba(30, 41, 59, 0.5);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 14px;
-  padding: 1.5rem;
+  @include card-base;
   display: flex;
   flex-direction: column;
   gap: 0.35rem;
 
   .metricLabel {
-    font-size: 0.85rem;
+    font-size: 0.75rem;
     font-weight: 700;
-    color: #94a3b8;
+    color: var(--foreground-muted);
     text-transform: uppercase;
     letter-spacing: 0.05em;
   }
 
   .metricValue {
-    font-size: 1.75rem;
+    font-size: 1.6rem;
     font-weight: 800;
-    color: #f8fafc;
+    color: var(--foreground);
 
     &.green {
-      color: #34d399;
+      color: $color-success;
     }
 
     &.blue {
-      color: #60a5fa;
+      color: $color-accent;
     }
 
     &.purple {
-      color: #c084fc;
+      color: #a855f7;
     }
   }
 }
 
 .section {
-  background: rgba(30, 41, 59, 0.5);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 16px;
-  padding: 2rem;
-  margin-bottom: 2.5rem;
+  @include card-base;
+  margin-bottom: 2rem;
 
   h2 {
-    font-size: 1.6rem;
+    font-size: 1.3rem;
     font-weight: 700;
-    color: #f8fafc;
+    color: var(--foreground);
     margin-bottom: 0.5rem;
   }
 
   .helperText {
-    color: #cbd5e1;
+    color: var(--foreground-secondary);
     font-size: 0.95rem;
     margin-bottom: 1.5rem;
     line-height: 1.6;
@@ -189,36 +166,34 @@
 
 .stancesGrid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
   gap: 1.25rem;
 }
 
 .stanceCard {
-  background: rgba(15, 23, 42, 0.6);
-  border: 1px solid rgba(255, 255, 255, 0.06);
-  border-radius: 12px;
-  padding: 1.25rem;
+  @include card-base;
+  background-color: var(--background);
   display: flex;
   flex-direction: column;
-  gap: 0.5rem;
+  gap: 0.4rem;
 
   .categoryTag {
     font-size: 0.75rem;
     font-weight: 700;
-    color: #38bdf8;
+    color: $color-accent;
     text-transform: uppercase;
     letter-spacing: 0.05em;
   }
 
   .positionTitle {
-    font-size: 1.1rem;
+    font-size: 1rem;
     font-weight: 700;
-    color: #f8fafc;
+    color: var(--foreground);
   }
 
   .stanceDetails {
-    font-size: 0.9rem;
-    color: #94a3b8;
+    font-size: 0.875rem;
+    color: var(--foreground-secondary);
     line-height: 1.5;
   }
 }
@@ -229,18 +204,18 @@
   gap: 0.75rem;
 
   .endorsementBadge {
-    background: rgba(56, 189, 248, 0.1);
-    color: #38bdf8;
-    border: 1px solid rgba(56, 189, 248, 0.25);
+    background-color: rgba($color-accent, 0.08);
+    color: $color-accent;
+    border: 1px solid rgba($color-accent, 0.2);
     padding: 0.4rem 0.85rem;
-    border-radius: 8px;
-    font-size: 0.9rem;
+    border-radius: $radius-sm;
+    font-size: 0.85rem;
     font-weight: 600;
   }
 }
 
 .statusContainer {
   text-align: center;
-  padding: 5rem 2rem;
-  color: #94a3b8;
+  padding: 4rem 1.5rem;
+  color: var(--foreground-secondary);
 }

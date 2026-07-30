@@ -12,6 +12,7 @@ class PoliticianBase(BaseModel):
     title: str
     state: str
     party: Party
+    chamber: Chamber
     profile_image_url: Optional[str] = None
 
 class PoliticianSearchItem(PoliticianBase):
@@ -26,8 +27,8 @@ class SponsoredLegislationItem(BaseModel):
 
 class PoliticianDetail(PoliticianBase):
     chamber: Chamber
-    date_of_birth: str
-    gender: str
+    date_of_birth: Optional[str] = None
+    gender: Optional[str] = None
     twitter_account: Optional[str] = None
     facebook_account: Optional[str] = None
     youtube_account: Optional[str] = None

@@ -1,4 +1,6 @@
 import Link from "next/link";
+import { HugeiconsIcon } from "@hugeicons/react";
+import { ArrowLeft01Icon, ArrowRight01Icon, InformationCircleIcon } from "@hugeicons/core-free-icons";
 import styles from "./profile.module.scss";
 import { fetchPoliticianById, fetchPoliticianFinance } from "../../../lib/api";
 import FinanceChart from "../../components/FinanceChart/FinanceChart";
@@ -33,7 +35,7 @@ export default async function ProfilePage({ params }: PageProps) {
         <h2>Profile Not Found</h2>
         <p>{errorMsg || "The politician you are looking for does not exist in our records."}</p>
         <Link href="/" className={styles.backLink}>
-          &larr; Back to Search
+          <HugeiconsIcon icon={ArrowLeft01Icon} size={18} /> Back to Search
         </Link>
       </div>
     );
@@ -68,7 +70,7 @@ export default async function ProfilePage({ params }: PageProps) {
   return (
     <div className={styles.container}>
       <Link href="/" className={styles.backLink}>
-        &larr; Back to Search
+        <HugeiconsIcon icon={ArrowLeft01Icon} size={18} /> Back to Search
       </Link>
 
       <div className={styles.layout}>
@@ -178,8 +180,8 @@ export default async function ProfilePage({ params }: PageProps) {
           <section className={styles.section}>
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "0.5rem" }}>
               <h2 style={{ margin: 0 }}>Recently Sponsored Legislation</h2>
-              <Link href="/about#bill-guide" style={{ fontSize: "0.85rem", color: "#38bdf8", textDecoration: "none", fontWeight: 600 }}>
-                ℹ️ Bill Types Guide
+              <Link href="/about#bill-guide" style={{ fontSize: "0.85rem", color: "#38bdf8", textDecoration: "none", fontWeight: 600, display: "inline-flex", alignItems: "center", gap: "0.35rem" }}>
+                <HugeiconsIcon icon={InformationCircleIcon} size={16} /> Bill Types Guide
               </Link>
             </div>
             {politician.sponsored_legislation && politician.sponsored_legislation.length > 0 ? (
@@ -206,7 +208,7 @@ export default async function ProfilePage({ params }: PageProps) {
                 </ul>
                 <div className={styles.viewMoreContainer}>
                   <Link href={`/profile/${id}/legislation`} className={styles.viewMoreBtn}>
-                    View All Sponsored & Voted Legislation &rarr;
+                    View All Sponsored & Voted Legislation <HugeiconsIcon icon={ArrowRight01Icon} size={16} />
                   </Link>
                 </div>
               </>

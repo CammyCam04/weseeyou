@@ -57,7 +57,7 @@ export default function AboutPage() {
 
       {/* Bill Guide Section */}
       <section id="bill-guide" className={styles.card}>
-        <h2>📖 Legislative Bill Types Guide</h2>
+        <h2>Legislative Bill Types Guide</h2>
         <p>
           In Congress, legislation is designated with abbreviations based on where it originated and what type of measure it is. Use this reference guide to understand bill prefixes:
         </p>
@@ -90,7 +90,7 @@ export default function AboutPage() {
 
       {/* Campaign Finance Glossary */}
       <section className={styles.card}>
-        <h2>💰 Campaign Finance Breakdown</h2>
+        <h2>Campaign Finance Breakdown</h2>
         <p>
           Campaign finance charts track where politicians receive funding for their election cycles based on official Federal Election Commission (FEC) disclosures:
         </p>
@@ -112,7 +112,7 @@ export default function AboutPage() {
 
       {/* Official Data Sources */}
       <section className={styles.card}>
-        <h2>🌐 Official Data Sources</h2>
+        <h2>Official Data Sources</h2>
         <p>
           All data rendered on this platform is pulled directly from verified U.S. government databases and APIs:
         </p>

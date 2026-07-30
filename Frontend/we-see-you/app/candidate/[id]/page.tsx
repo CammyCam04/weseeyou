@@ -1,4 +1,6 @@
 import Link from "next/link";
+import { HugeiconsIcon } from "@hugeicons/react";
+import { ArrowLeft01Icon } from "@hugeicons/core-free-icons";
 import { fetchCandidateById } from "../../../lib/api";
 import FinanceChart from "../../components/FinanceChart/FinanceChart";
 import PacBreakdown from "../../components/PacBreakdown/PacBreakdown";
@@ -27,7 +29,7 @@ export default async function CandidateProfilePage({ params }: PageProps) {
         <h2>Candidate Profile Not Found</h2>
         <p>{errorMsg || "The candidate profile you are looking for does not exist in our FEC records."}</p>
         <Link href="/local" className={styles.backLink}>
-          &larr; Back to Local & District Elections
+          <HugeiconsIcon icon={ArrowLeft01Icon} size={18} /> Back to Local & District Elections
         </Link>
       </div>
     );
@@ -51,7 +53,7 @@ export default async function CandidateProfilePage({ params }: PageProps) {
   return (
     <div className={styles.container}>
       <Link href="/local" className={styles.backLink}>
-        &larr; Back to Local & District Elections
+        <HugeiconsIcon icon={ArrowLeft01Icon} size={18} /> Back to Local & District Elections
       </Link>
 
       {/* Candidate Hero Header */}

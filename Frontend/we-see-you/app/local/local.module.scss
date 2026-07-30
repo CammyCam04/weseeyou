@@ -1,41 +1,37 @@
+// app/local/local.module.scss
+@use "../styles/variables" as *;
+@use "../styles/mixins" as *;
+
 .container {
-  max-width: 1200px;
+  max-width: 1280px;
   margin: 0 auto;
-  padding: 2.5rem 1.5rem 4rem;
+  padding: 2.5rem 1.5rem;
 }
 
 .header {
-  text-align: center;
-  margin-bottom: 2.5rem;
+  margin-bottom: 2rem;
+  padding-bottom: 1.5rem;
+  border-bottom: 1px solid var(--border-color);
 
   h1 {
-    font-size: 2.5rem;
+    font-size: 2rem;
     font-weight: 800;
-    color: #f8fafc;
+    color: var(--foreground);
     margin-bottom: 0.5rem;
     letter-spacing: -0.025em;
-
-    span {
-      background: linear-gradient(135deg, #38bdf8 0%, #818cf8 100%);
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-    }
   }
 
   p {
-    color: #94a3b8;
-    font-size: 1.1rem;
-    max-width: 700px;
-    margin: 0 auto;
+    color: var(--foreground-secondary);
+    font-size: 1rem;
+    max-width: 680px;
+    margin: 0;
   }
 }
 
 .searchPanel {
-  background: rgba(30, 41, 59, 0.6);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 16px;
-  padding: 1.75rem;
-  margin-bottom: 3rem;
+  @include card-base;
+  margin-bottom: 2rem;
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
   gap: 1.25rem;
@@ -48,9 +44,9 @@
   gap: 0.4rem;
 
   label {
-    font-size: 0.85rem;
+    font-size: 0.75rem;
     font-weight: 700;
-    color: #94a3b8;
+    color: var(--foreground-muted);
     text-transform: uppercase;
     letter-spacing: 0.05em;
   }
@@ -58,54 +54,46 @@
   .select, .input {
     width: 100%;
     padding: 0.75rem 1rem;
-    background: rgba(15, 23, 42, 0.8);
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    border-radius: 10px;
-    color: #f8fafc;
+    background-color: var(--background);
+    border: 1px solid var(--border-color);
+    border-radius: $radius-sm;
+    color: var(--foreground);
     font-size: 0.95rem;
     outline: none;
-    transition: all 0.2s ease;
+    transition: border-color 0.15s ease;
 
     &:focus {
-      border-color: #38bdf8;
-      box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.15);
+      border-color: $color-accent;
+      box-shadow: 0 0 0 3px rgba($color-accent, 0.15);
     }
   }
 }
 
 .searchBtn {
-  padding: 0.8rem 1.5rem;
-  background: linear-gradient(135deg, #0284c7 0%, #4f46e5 100%);
+  @include btn-base;
+  background-color: $color-accent;
   color: #ffffff;
-  font-weight: 700;
-  border: none;
-  border-radius: 10px;
-  cursor: pointer;
-  font-size: 0.95rem;
-  transition: all 0.2s ease;
+  padding: 0.75rem 1.25rem;
+  height: 42px;
 
   &:hover {
-    opacity: 0.9;
-    transform: translateY(-1px);
+    background-color: $color-accent-hover;
   }
 }
 
 .section {
-  background: rgba(30, 41, 59, 0.5);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 16px;
-  padding: 2rem;
-  margin-bottom: 2.5rem;
+  @include card-base;
+  margin-bottom: 2rem;
 
   h2 {
-    font-size: 1.5rem;
+    font-size: 1.3rem;
     font-weight: 700;
-    color: #f8fafc;
+    color: var(--foreground);
     margin-bottom: 0.4rem;
   }
 
   .helperText {
-    color: #94a3b8;
+    color: var(--foreground-secondary);
     font-size: 0.9rem;
     margin-bottom: 1.5rem;
   }
@@ -118,62 +106,48 @@
 }
 
 .candidateCard {
-  background: rgba(15, 23, 42, 0.6);
-  border: 1px solid rgba(255, 255, 255, 0.06);
-  border-radius: 12px;
-  padding: 1.25rem;
+  @include card-base;
+  background-color: var(--background);
   display: flex;
   flex-direction: column;
   gap: 0.5rem;
 }
 
 .candHeader {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
+  @include flex-between;
 }
 
 .candName {
-  font-size: 1.1rem;
+  font-size: 1.05rem;
   font-weight: 700;
-  color: #f8fafc;
+  color: var(--foreground);
 }
 
 .partyBadge {
-  font-size: 0.7rem;
-  font-weight: 700;
-  padding: 0.2rem 0.5rem;
-  border-radius: 5px;
-  text-transform: uppercase;
+  @include party-badge-base;
 
   &.republican {
-    background: rgba(239, 68, 68, 0.15);
-    color: #f87171;
-    border: 1px solid rgba(239, 68, 68, 0.3);
+    @include badge-republican;
   }
 
   &.democrat {
-    background: rgba(59, 130, 246, 0.15);
-    color: #60a5fa;
-    border: 1px solid rgba(59, 130, 246, 0.3);
+    @include badge-democrat;
   }
 
   &.libertarian, &.other {
-    background: rgba(168, 85, 247, 0.15);
-    color: #c084fc;
-    border: 1px solid rgba(168, 85, 247, 0.3);
+    @include badge-independent;
   }
 }
 
 .candOffice {
-  font-size: 0.9rem;
-  color: #38bdf8;
+  font-size: 0.875rem;
+  color: $color-accent;
   font-weight: 600;
 }
 
 .candMeta {
   font-size: 0.8rem;
-  color: #94a3b8;
+  color: var(--foreground-muted);
 }
 
 .incumbentsGrid {
@@ -183,21 +157,12 @@
 }
 
 .incumbentCard {
-  background: rgba(15, 23, 42, 0.6);
-  border: 1px solid rgba(255, 255, 255, 0.06);
-  border-radius: 12px;
-  padding: 1.25rem;
+  @include interactive-card;
+  background-color: var(--background);
   display: flex;
   align-items: center;
   gap: 1rem;
   text-decoration: none;
-  transition: all 0.2s ease;
-
-  &:hover {
-    transform: translateY(-2px);
-    border-color: rgba(56, 189, 248, 0.4);
-    background: rgba(15, 23, 42, 0.9);
-  }
 }
 
 .incInfo {
@@ -206,21 +171,21 @@
   gap: 0.2rem;
 
   .name {
-    font-size: 1rem;
+    font-size: 0.95rem;
     font-weight: 700;
-    color: #f8fafc;
+    color: var(--foreground);
   }
 
   .title {
     font-size: 0.85rem;
-    color: #38bdf8;
+    color: $color-accent;
     font-weight: 600;
   }
 }
 
 .status {
   text-align: center;
-  padding: 3rem;
-  color: #94a3b8;
-  font-size: 1.1rem;
+  padding: 4rem 1.5rem;
+  color: var(--foreground-secondary);
+  font-size: 1rem;
 }

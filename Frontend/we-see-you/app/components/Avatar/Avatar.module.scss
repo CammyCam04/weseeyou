@@ -1,30 +1,23 @@
+// app/components/Avatar/Avatar.module.scss
+@use "../../styles/variables" as *;
+@use "../../styles/mixins" as *;
+
 .avatarWrapper {
-  width: 90px;
-  height: 90px;
-  border-radius: 50%;
+  width: 64px;
+  height: 64px;
+  border-radius: $radius-full;
   overflow: hidden;
-  background-color: #f3f4f6;
-  border: 2px solid #e5e7eb;
+  background-color: rgba($color-border-dark, 0.4);
+  border: 2px solid var(--border-color);
   display: flex;
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
-  margin-bottom: 1rem;
-
-  @media (prefers-color-scheme: dark) {
-    background-color: #374151;
-    border-color: #374151;
-  }
 
   &.large {
-    width: 160px;
-    height: 160px;
-    border: 4px solid #e5e7eb;
-    margin-bottom: 1.5rem;
-
-    @media (prefers-color-scheme: dark) {
-      border-color: #374151;
-    }
+    width: 120px;
+    height: 120px;
+    border-width: 3px;
   }
 }
 
@@ -35,11 +28,11 @@
 }
 
 .avatarPlaceholder {
-  font-size: 2rem;
+  font-size: 1.25rem;
   font-weight: 700;
-  color: #9ca3af;
+  color: var(--foreground-muted);
 
   &.large {
-    font-size: 3.5rem;
+    font-size: 2.5rem;
   }
 }

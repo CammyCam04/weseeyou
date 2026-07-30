@@ -1,47 +1,43 @@
+// app/about/about.module.scss
+@use "../styles/variables" as *;
+@use "../styles/mixins" as *;
+
 .container {
   max-width: 1000px;
   margin: 0 auto;
-  padding: 3rem 1.5rem 5rem;
+  padding: 2.5rem 1.5rem 4rem;
 }
 
 .header {
-  text-align: center;
-  margin-bottom: 3.5rem;
+  margin-bottom: 2rem;
+  padding-bottom: 1.5rem;
+  border-bottom: 1px solid var(--border-color);
 
   h1 {
-    font-size: 2.75rem;
+    font-size: 2rem;
     font-weight: 800;
-    color: #f8fafc;
-    margin-bottom: 0.75rem;
+    color: var(--foreground);
+    margin-bottom: 0.5rem;
     letter-spacing: -0.025em;
-
-    span {
-      background: linear-gradient(135deg, #38bdf8 0%, #818cf8 100%);
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-    }
   }
 
   p {
-    color: #94a3b8;
-    font-size: 1.15rem;
+    color: var(--foreground-secondary);
+    font-size: 1rem;
     max-width: 700px;
-    margin: 0 auto;
+    margin: 0;
     line-height: 1.6;
   }
 }
 
 .card {
-  background: rgba(30, 41, 59, 0.5);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 16px;
-  padding: 2rem;
-  margin-bottom: 2.5rem;
+  @include card-base;
+  margin-bottom: 2rem;
 
   h2 {
-    font-size: 1.6rem;
+    font-size: 1.3rem;
     font-weight: 700;
-    color: #f8fafc;
+    color: var(--foreground);
     margin-bottom: 1rem;
     display: flex;
     align-items: center;
@@ -49,16 +45,16 @@
   }
 
   p {
-    color: #cbd5e1;
-    line-height: 1.65;
-    font-size: 1rem;
+    color: var(--foreground-secondary);
+    line-height: 1.6;
+    font-size: 0.95rem;
     margin-bottom: 1rem;
   }
 }
 
 .tableWrapper {
   overflow-x: auto;
-  margin-top: 1.5rem;
+  margin-top: 1.25rem;
 }
 
 .table {
@@ -67,64 +63,63 @@
   text-align: left;
 
   th, td {
-    padding: 1rem 1.25rem;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+    padding: 0.85rem 1rem;
+    border-bottom: 1px solid var(--border-color);
   }
 
   th {
-    background: rgba(15, 23, 42, 0.8);
-    color: #38bdf8;
-    font-size: 0.85rem;
+    background-color: var(--background);
+    color: $color-accent;
+    font-size: 0.8rem;
     font-weight: 700;
     text-transform: uppercase;
     letter-spacing: 0.05em;
   }
 
   td {
-    color: #e2e8f0;
-    font-size: 0.95rem;
+    color: var(--foreground);
+    font-size: 0.9rem;
     vertical-align: top;
   }
 
   tr:hover td {
-    background: rgba(255, 255, 255, 0.02);
+    background-color: rgba($color-accent, 0.04);
   }
 }
 
 .codeBadge {
-  font-family: var(--font-geist-mono, monospace);
+  font-family: $font-family-mono;
   font-weight: 700;
-  color: #38bdf8;
-  background: rgba(56, 189, 248, 0.12);
+  color: $color-accent;
+  background-color: rgba($color-accent, 0.1);
   padding: 0.2rem 0.5rem;
-  border-radius: 5px;
-  border: 1px solid rgba(56, 189, 248, 0.25);
+  border-radius: $radius-sm;
+  border: 1px solid rgba($color-accent, 0.2);
   display: inline-block;
 }
 
 .dataList {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
   gap: 1.25rem;
-  margin-top: 1.5rem;
+  margin-top: 1.25rem;
 }
 
 .dataItem {
-  background: rgba(15, 23, 42, 0.6);
-  border: 1px solid rgba(255, 255, 255, 0.06);
-  border-radius: 12px;
+  @include card-base;
+  background-color: var(--background);
   padding: 1.25rem;
 
   h3 {
-    font-size: 1.1rem;
+    font-size: 1rem;
     font-weight: 700;
-    color: #f8fafc;
+    color: var(--foreground);
     margin-bottom: 0.4rem;
   }
 
   p {
-    font-size: 0.9rem;
-    color: #94a3b8;
+    font-size: 0.875rem;
+    color: var(--foreground-secondary);
     margin: 0;
     line-height: 1.5;
   }

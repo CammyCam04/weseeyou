@@ -2,6 +2,8 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import { HugeiconsIcon } from "@hugeicons/react";
+import { Search01Icon } from "@hugeicons/core-free-icons";
 import styles from "./committees.module.scss";
 import { fetchCommittees, CommitteeSearchItem } from "../../lib/api";
 
@@ -41,6 +43,9 @@ export default function CommitteesPage() {
 
       <div className={styles.controls}>
         <div className={styles.searchBox}>
+          <span className={styles.searchIcon}>
+            <HugeiconsIcon icon={Search01Icon} size={18} />
+          </span>
           <input
             type="text"
             placeholder="Search committees by name (e.g. Foreign Relations, Agriculture, Finance)..."

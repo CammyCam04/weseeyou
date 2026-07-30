@@ -3,6 +3,8 @@
 import { useState, useEffect, useCallback, Suspense } from "react";
 import Link from "next/link";
 import { useSearchParams, useRouter } from "next/navigation";
+import { HugeiconsIcon } from "@hugeicons/react";
+import { Search01Icon } from "@hugeicons/core-free-icons";
 import styles from "./local.module.scss";
 import { fetchLocalElections, LocalLookupResponse } from "../../lib/api";
 import Avatar from "../components/Avatar/Avatar";
@@ -182,13 +184,15 @@ function LocalElectionsContent() {
         </div>
 
         <button type="submit" className={styles.searchBtn}>
-          Search Local Elections
+          <HugeiconsIcon icon={Search01Icon} size={18} /> Search Local Elections
         </button>
       </form>
 
       {!urlState && !loading && (
         <div className={styles.status} style={{ padding: "4rem 1rem", background: "rgba(30, 41, 59, 0.4)", borderRadius: "16px", border: "1px border rgba(255,255,255,0.08)" }}>
-          <h2 style={{ color: "#f8fafc", marginBottom: "0.5rem" }}>🔎 Ready to Search</h2>
+          <h2 style={{ color: "#f8fafc", marginBottom: "0.5rem", display: "inline-flex", alignItems: "center", gap: "0.5rem" }}>
+            <HugeiconsIcon icon={Search01Icon} size={24} /> Ready to Search
+          </h2>
           <p>Please select a <strong>State</strong> above and click <strong>Search Local Elections</strong> to explore candidates and officials.</p>
         </div>
       )}
