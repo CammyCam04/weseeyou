@@ -6,7 +6,7 @@ import { useSearchParams, useRouter } from "next/navigation";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { Search01Icon } from "@hugeicons/core-free-icons";
 import styles from "./local.module.scss";
-import { fetchLocalElections, LocalLookupResponse } from "../../lib/api";
+import { fetchLocalElections, fetchStateCounties, LocalLookupResponse } from "../../lib/api";
 import Avatar from "../components/Avatar/Avatar";
 
 const US_STATES = [
@@ -70,10 +70,15 @@ function LocalElectionsContent() {
   const urlState = searchParams.get("state") || "";
   const urlDistrict = searchParams.get("district") || "";
   const urlAddress = searchParams.get("address") || "";
+  const urlCounty = searchParams.get("county") || "";
 
   const [selectedState, setSelectedState] = useState<string>(urlState);
   const [district, setDistrict] = useState<string>(urlDistrict);
   const [address, setAddress] = useState<string>(urlAddress);
+  const [county, setCounty] = useState<string>(urlCounty);
+
+  const [availableCounties, setAvailableCounties] = useState<string[]>([]);
+  const [countiesLoading, setCountiesLoading] = useState<boolean>(false);
 
   const [data, setData] = useState<LocalLookupResponse | null>(null);
   const [loading, setLoading] = useState<boolean>(false);
@@ -84,9 +89,23 @@ function LocalElectionsContent() {
     setSelectedState(urlState);
     setDistrict(urlDistrict);
     setAddress(urlAddress);
-  }, [urlState, urlDistrict, urlAddress]);
+    setCounty(urlCounty);
+  }, [urlState, urlDistrict, urlAddress, urlCounty]);
 
-  const loadData = useCallback(async (st: string, dist: string, addr: string) => {
+  // Dynamically load Counties when State changes
+  useEffect(() => {
+    if (selectedState) {
+      setCountiesLoading(true);
+      fetchStateCounties(selectedState)
+        .then((list) => setAvailableCounties(list))
+        .catch(() => setAvailableCounties([]))
+        .finally(() => setCountiesLoading(false));
+    } else {
+      setAvailableCounties([]);
+    }
+  }, [selectedState]);
+
+  const loadData = useCallback(async (st: string, dist: string, addr: string, co: string) => {
     if (!st) {
       setData(null);
       setLoading(false);
@@ -96,7 +115,7 @@ function LocalElectionsContent() {
     setLoading(true);
     setError(null);
     try {
-      const res = await fetchLocalElections(st, dist || undefined, addr || undefined);
+      const res = await fetchLocalElections(st, dist || undefined, addr || undefined, co || undefined);
       setData(res);
     } catch (err: unknown) {
       console.error(err);
@@ -109,24 +128,41 @@ function LocalElectionsContent() {
 
   useEffect(() => {
     if (urlState) {
-      loadData(urlState, urlDistrict, urlAddress);
+      loadData(urlState, urlDistrict, urlAddress, urlCounty);
     } else {
       setData(null);
       setLoading(false);
     }
-  }, [urlState, urlDistrict, urlAddress, loadData]);
+  }, [urlState, urlDistrict, urlAddress, urlCounty, loadData]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!selectedState) {
-      setError("Please select a State to search.");
+    let st = selectedState;
+
+    if (!st && address) {
+      if (address.includes(",")) {
+        const parts = address.split(",");
+        const possibleSt = parts[parts.length - 1].trim().toUpperCase();
+        if (possibleSt.length === 2) {
+          st = possibleSt;
+          setSelectedState(possibleSt);
+        }
+      }
+      if (!st) {
+        st = "KY"; // Default fallback state for location resolution
+      }
+    }
+
+    if (!st) {
+      setError("Please select a State or enter a City / ZIP to search.");
       return;
     }
 
     const params = new URLSearchParams();
-    params.set("state", selectedState);
+    params.set("state", st);
     if (district) params.set("district", district);
     if (address) params.set("address", address);
+    if (county) params.set("county", county);
 
     router.push(`/local?${params.toString()}`);
   };
@@ -138,7 +174,7 @@ function LocalElectionsContent() {
           Local & State <span>Elections Explorer</span>
         </h1>
         <p>
-          Select your State or enter your District / ZIP to explore active running candidates, current incumbents, and township officials.
+          Select your State or filter by County / City / ZIP to explore active running candidates, county leadership, and municipal officials.
         </p>
       </header>
 
@@ -149,11 +185,34 @@ function LocalElectionsContent() {
             id="state-select"
             className={styles.select}
             value={selectedState}
-            onChange={(e) => setSelectedState(e.target.value)}
+            onChange={(e) => {
+              setSelectedState(e.target.value);
+              setCounty("");
+            }}
           >
             {US_STATES.map((s) => (
               <option key={s.code} value={s.code}>
                 {s.name} {s.code && `(${s.code})`}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        <div className={styles.inputGroup}>
+          <label htmlFor="county-select">Filter by County (Optional)</label>
+          <select
+            id="county-select"
+            className={styles.select}
+            value={county}
+            onChange={(e) => setCounty(e.target.value)}
+            disabled={countiesLoading || availableCounties.length === 0}
+          >
+            <option value="">
+              {countiesLoading ? "Loading Counties..." : availableCounties.length > 0 ? "-- All Counties --" : "-- Select State First --"}
+            </option>
+            {availableCounties.map((c) => (
+              <option key={c} value={c}>
+                {c}
               </option>
             ))}
           </select>
@@ -176,7 +235,7 @@ function LocalElectionsContent() {
           <input
             id="address-input"
             type="text"
-            placeholder="e.g. 78701 or Austin"
+            placeholder="e.g. 5-digit ZIP or City Name"
             className={styles.input}
             value={address}
             onChange={(e) => setAddress(e.target.value)}
@@ -202,6 +261,43 @@ function LocalElectionsContent() {
 
       {!loading && data && (
         <>
+          {/* Location Badge */}
+          {data.county && (
+            <div style={{ marginBottom: "1.5rem", padding: "0.85rem 1.25rem", background: "rgba(14, 165, 233, 0.1)", borderRadius: "12px", border: "1px solid rgba(56, 189, 248, 0.3)", color: "#7dd3fc", fontWeight: 600, display: "flex", alignItems: "center", gap: "0.75rem" }}>
+              <span style={{ fontSize: "1.2rem" }}>📍</span> Location Hierarchy: State of {data.state} &rarr; {data.county} {data.district ? `(District ${data.district})` : ""}
+            </div>
+          )}
+
+          {/* County Government Leadership Section */}
+          {data.county_officials && data.county_officials.length > 0 && (
+            <section className={styles.section}>
+              <h2>
+                🏛️ County Government Officials ({data.county_officials.length}) &bull; {data.county}
+              </h2>
+              <p className={styles.helperText}>
+                Elected county-level officials including County Judge-Executive, Sheriff, Commonwealth&apos;s Attorney (Circuit Prosecutor), County Attorney, Coroner, County Clerk, PVA, and Magistrates.
+              </p>
+
+              <div className={styles.candidatesGrid}>
+                {data.county_officials.map((cand) => (
+                  <Link key={cand.id} href={`/candidate/${cand.id}`} className={styles.candidateCard} style={{ textDecoration: "none" }}>
+                    <div className={styles.candHeader}>
+                      <span className={styles.candName}>{cand.name}</span>
+                      <span className={`${styles.partyBadge} ${styles.other}`}>{cand.party || "Elected Official"}</span>
+                    </div>
+                    <div className={styles.candOffice}>{cand.office}</div>
+                    <div className={styles.candMeta}>
+                      {cand.county}, {cand.state} • Incumbent
+                    </div>
+                    <div style={{ marginTop: "0.5rem", fontSize: "0.8rem", color: "#38bdf8", fontWeight: 600 }}>
+                      View Official Profile & Records &rarr;
+                    </div>
+                  </Link>
+                ))}
+              </div>
+            </section>
+          )}
+
           {/* Active Running Candidates Section */}
           <section className={styles.section}>
             <h2>
@@ -247,10 +343,10 @@ function LocalElectionsContent() {
           {data.township_candidates && data.township_candidates.length > 0 && (
             <section className={styles.section}>
               <h2>
-                Candidates Running for Township & Municipal Offices ({data.township_candidates.length})
+                🏙️ Municipal & City Officials ({data.township_candidates.length})
               </h2>
               <p className={styles.helperText}>
-                Active candidates running for local Mayor, City Treasurer, Township Clerk, County Sheriff, and City Council. Click any candidate to view their platform stances and municipal campaign budget.
+                Active municipal leaders and council candidates (Mayor, City Council, Board of Aldermen). Click any official to view their platform and profile.
               </p>
 
               <div className={styles.candidatesGrid}>
@@ -276,7 +372,7 @@ function LocalElectionsContent() {
           {/* Current Incumbents in Office */}
           <section className={styles.section}>
             <h2>
-              Elected Representatives in Office for {data.state} ({data.incumbents.length})
+              🇺🇸 Federal & State Elected Representatives ({data.incumbents.length})
             </h2>
             <p className={styles.helperText}>
               Current Senators and Representatives serving in the U.S. Congress for {data.state}. Click to view campaign finance and legislative records.
@@ -311,8 +407,8 @@ function LocalElectionsContent() {
           {/* Local Municipal & Township Leadership Directory */}
           {data.civic_officials && data.civic_officials.length > 0 && (
             <section className={styles.section}>
-              <h2>Township & Municipal Leadership ({data.civic_officials.length})</h2>
-              <p className={styles.helperText}>Currently serving Mayor, City Treasurer, Township Clerk, County Sheriff, and City Council members. Click any official to view their leadership portfolio.</p>
+              <h2>Civic Officials & Representatives Directory ({data.civic_officials.length})</h2>
+              <p className={styles.helperText}>Currently serving civic officials. Click any official to view their leadership portfolio.</p>
 
               <div className={styles.candidatesGrid}>
                 {data.civic_officials.map((civ, idx) => {

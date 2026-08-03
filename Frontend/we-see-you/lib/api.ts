@@ -298,27 +298,64 @@ export interface CivicOfficialItem {
   photo_url?: string;
 }
 
+export interface CountyOfficialItem {
+  id: string;
+  name: string;
+  office: string;
+  county: string;
+  state: string;
+  party?: string;
+  is_incumbent?: boolean;
+  phone?: string;
+  url?: string;
+}
+
 export interface LocalLookupResponse {
   state: string;
+  county?: string;
   district?: string;
   incumbents: PoliticianDetail[];
   running_candidates: CandidateItem[];
+  county_officials?: CountyOfficialItem[];
   township_candidates: CandidateItem[];
   civic_officials: CivicOfficialItem[];
 }
 
 /**
- * Fetch local elections, incumbents, and running candidates by State, District, or Address
+ * Fetch list of official counties for a State
+ */
+export async function fetchStateCounties(state: string): Promise<string[]> {
+  if (!state) return [];
+  const url = new URL(`${API_BASE_URL}/local/counties`);
+  url.searchParams.append("state", state);
+
+  const response = await fetch(url.toString(), {
+    method: "GET",
+    headers: { "Content-Type": "application/json" },
+    next: { revalidate: 3600 },
+  });
+
+  if (!response.ok) {
+    return [];
+  }
+
+  return response.json();
+}
+
+/**
+ * Fetch local elections, incumbents, and running candidates by State, District, Address, or County
  */
 export async function fetchLocalElections(
   state: string,
   district?: string,
-  address?: string
+  address?: string,
+  county?: string
 ): Promise<LocalLookupResponse> {
   const url = new URL(`${API_BASE_URL}/local`);
   url.searchParams.append("state", state);
   if (district) url.searchParams.append("district", district);
   if (address) url.searchParams.append("address", address);
+  if (county) url.searchParams.append("county", county);
 
   const response = await fetch(url.toString(), {
     method: "GET",
