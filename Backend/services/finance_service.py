@@ -3,7 +3,14 @@ import os
 import requests
 from collections import defaultdict
 from typing import Dict, List
-from models import FinanceSummary, FinanceHistoryItem, DonorItem, PacItem
+from models import (
+    FinanceSummary,
+    FinanceHistoryItem,
+    DonorItem,
+    PacItem,
+    IndustrySectorItem,
+    IndependentExpenditureItem
+)
 from services.legislator_service import load_congress_data
 # endregion
 
@@ -25,9 +32,6 @@ _candidate_committees_cache: Dict[str, List[str]] = {}
 
 
 def _get_candidate_committees(fec_id: str) -> List[str]:
-    """
-    Fetches and caches the list of committee IDs associated with an FEC candidate ID.
-    """
     if fec_id in _candidate_committees_cache:
         return _candidate_committees_cache[fec_id]
         
@@ -48,9 +52,6 @@ def _get_candidate_committees(fec_id: str) -> List[str]:
 
 
 def _get_top_employers(committee_ids: List[str], cycle: int) -> List[DonorItem]:
-    """
-    Queries and aggregates top contributing employers for a set of committees in a cycle.
-    """
     if not committee_ids or not FEC_API_KEY:
         return []
         
@@ -70,7 +71,6 @@ def _get_top_employers(committee_ids: List[str], cycle: int) -> List[DonorItem]:
             if resp.status_code == 200:
                 for row in resp.json().get("results", []):
                     employer = str(row.get("employer", "")).strip().upper()
-                    # Filter placeholders and self-employed categories
                     if not employer or employer in (
                         "N/A", "NONE", "SELF", "SELF EMPLOYED", "SELF-EMPLOYED", 
                         "RETIRED", "NOT EMPLOYED", "UNEMPLOYED", "INFORMATION REQUESTED", 
@@ -88,11 +88,45 @@ def _get_top_employers(committee_ids: List[str], cycle: int) -> List[DonorItem]:
     ]
 
 
+def _get_independent_expenditures(fec_id: str, cycle: int) -> List[IndependentExpenditureItem]:
+    """
+    Fetches independent expenditures (spending by Super PACs / outside groups FOR or AGAINST the candidate).
+    """
+    if not FEC_API_KEY or not fec_id:
+        return []
+
+    expenditures = []
+    try:
+        url = f"https://api.open.fec.gov/v1/schedules/schedule_e/by_candidate/"
+        params = {
+            "api_key": FEC_API_KEY,
+            "candidate_id": fec_id,
+            "cycle": cycle,
+            "per_page": 20,
+            "sort": "-total"
+        }
+        resp = requests.get(url, params=params, timeout=5)
+        if resp.status_code == 200:
+            for row in resp.json().get("results", []):
+                comm_name = row.get("committee_name") or "Outside Political Group"
+                support_oppose = row.get("support_oppose_indicator") or "S"
+                total_amt = float(row.get("total") or 0.0)
+                if total_amt > 0:
+                    expenditures.append(
+                        IndependentExpenditureItem(
+                            committee_name=comm_name.strip().title(),
+                            support_or_oppose="SUPPORT" if support_oppose.upper() == "S" else "OPPOSE",
+                            amount=round(total_amt, 2),
+                            description=f"Outside independent expenditure in {cycle} election"
+                        )
+                    )
+    except Exception as ex:
+        print(f"Error fetching independent expenditures for {fec_id}: {ex}")
+
+    return expenditures[:10]
+
+
 def _get_itemized_pacs(committee_ids: List[str]):
-    """
-    Fetches itemized PAC and Super PAC contributions for candidate committees from OpenFEC Schedule A.
-    Returns (pacs_list, super_pacs_list).
-    """
     if not FEC_API_KEY or not committee_ids:
         return [], []
 
@@ -145,9 +179,6 @@ def _get_itemized_pacs(committee_ids: List[str]):
 
 # region Main Finance Service
 def get_campaign_finance(bioguide_id: str) -> Dict[str, FinanceSummary]:
-    """
-    Fetches campaign finance data for all associated FEC IDs, grouping them by election/campaign cycle.
-    """
     global _finance_cache
     if bioguide_id in _finance_cache:
         return _finance_cache[bioguide_id]
@@ -159,12 +190,10 @@ def get_campaign_finance(bioguide_id: str) -> Dict[str, FinanceSummary]:
     campaigns = {}
     
     if FEC_API_KEY:
-        # Gather all associated FEC candidate IDs
         cand_ids = set(politician.fec_ids or [])
         if politician.fec_id:
             cand_ids.add(politician.fec_id)
             
-        # Search by name to find other runs (e.g. presidential bids)
         try:
             search_url = "https://api.open.fec.gov/v1/candidates/"
             search_params = {
@@ -181,7 +210,6 @@ def get_campaign_finance(bioguide_id: str) -> Dict[str, FinanceSummary]:
         except Exception as ex:
             print(f"FEC candidate search failed: {ex}")
             
-        # Fetch office/state details for each candidate ID
         metadata_map = {}
         if cand_ids:
             try:
@@ -200,7 +228,6 @@ def get_campaign_finance(bioguide_id: str) -> Dict[str, FinanceSummary]:
             except Exception as ex:
                 print(f"FEC metadata lookup failed: {ex}")
                 
-        # Get financial totals for each candidate ID
         grouped_totals = defaultdict(list)
         for fec_id in cand_ids:
             try:
@@ -216,19 +243,16 @@ def get_campaign_finance(bioguide_id: str) -> Dict[str, FinanceSummary]:
             except Exception as ex:
                 print(f"FEC totals request failed for candidate {fec_id}: {ex}")
                 
-        # Group and summarize campaign finance data
         for (fec_id, ey), rows in grouped_totals.items():
             meta = metadata_map.get(fec_id, {"office_full": "Unknown", "state": politician.state})
             office = meta["office_full"]
             state = meta["state"]
             
-            # Generate a descriptive campaign label
             if office in ("Senate", "House"):
                 label = f"{office} - {ey} Election ({state})"
             else:
                 label = f"{office} - {ey} Campaign"
                 
-            # Extract summary stats (or aggregate cycle data if missing)
             summary_row = next((r for r in rows if r.get("cycle") is None), None)
             if summary_row:
                 total_donations = float(summary_row.get("receipts") or 0.0)
@@ -247,7 +271,6 @@ def get_campaign_finance(bioguide_id: str) -> Dict[str, FinanceSummary]:
             else:
                 pct_small = pct_pac = pct_super_pac = 0.0
                 
-            # Format the campaign finance history
             history = []
             cycle_rows = sorted([r for r in rows if r.get("cycle") is not None], key=lambda x: x.get("cycle"))
             if not cycle_rows and total_donations > 0:
@@ -274,11 +297,11 @@ def get_campaign_finance(bioguide_id: str) -> Dict[str, FinanceSummary]:
                         )
                     )
             
-            # Query top contributing employers and itemized PACs from FEC
             committee_ids = _get_candidate_committees(fec_id)
             donors = _get_top_employers(committee_ids, ey)
             pacs, super_pacs = _get_itemized_pacs(committee_ids)
-                    
+            independent_expenditures = _get_independent_expenditures(fec_id, ey)
+
             campaigns[label] = FinanceSummary(
                 id=bioguide_id,
                 candidate_id=fec_id,
@@ -291,7 +314,8 @@ def get_campaign_finance(bioguide_id: str) -> Dict[str, FinanceSummary]:
                 history=history,
                 donors=donors,
                 pacs=pacs,
-                super_pacs=super_pacs
+                super_pacs=super_pacs,
+                independent_expenditures=independent_expenditures
             )
             
     _finance_cache[bioguide_id] = campaigns

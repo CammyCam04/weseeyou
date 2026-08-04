@@ -22,10 +22,73 @@ export interface SponsoredLegislationItem {
   congress_url: string;
 }
 
+export interface VotedLegislationItem {
+  bill_number: string;
+  title: string;
+  vote_date: string;
+  vote_position: string;
+  result: string;
+  description: string;
+}
+
+export interface ElectoralHistoryItem {
+  year: string;
+  office: string;
+  vote_share_pct: number;
+  margin_of_victory_pct: number;
+  opponent_name?: string;
+  total_votes?: number;
+}
+
+export interface PolicyStanceItem {
+  category: string;
+  position: string;
+  summary: string;
+}
+
+export interface CivicContactInfo {
+  official_address?: string;
+  official_phone?: string;
+  official_website?: string;
+  office_name?: string;
+}
+
+export interface StockTradeItem {
+  ticker: string;
+  asset_name: string;
+  transaction_type: string;
+  transaction_date: string;
+  disclosure_date: string;
+  amount_range: string;
+  owner: str;
+}
+
+export interface PartyAlignmentStats {
+  party_line_vote_pct: number;
+  missed_votes_pct: number;
+  total_votes_eligible: number;
+  total_votes_cast: number;
+}
+
+export interface DistrictDemographics {
+  district_pvi: string;
+  median_household_income: string;
+  total_population: string;
+  top_industries: string[];
+}
+
+export interface NewsArticleItem {
+  title: string;
+  source: string;
+  publication_date: string;
+  url: string;
+  snippet?: string;
+}
+
 export interface PoliticianDetail extends PoliticianSearchItem {
   chamber: Chamber;
-  date_of_birth: string;
-  gender: string;
+  date_of_birth?: string;
+  gender?: string;
   twitter_account?: string;
   facebook_account?: string;
   youtube_account?: string;
@@ -34,7 +97,15 @@ export interface PoliticianDetail extends PoliticianSearchItem {
   bio_summary?: string;
   wikipedia_id?: string;
   stances: string[];
+  policy_stances?: PolicyStanceItem[];
   sponsored_legislation: SponsoredLegislationItem[];
+  voted_legislation?: VotedLegislationItem[];
+  electoral_history?: ElectoralHistoryItem[];
+  civic_contact_info?: CivicContactInfo;
+  stock_trades?: StockTradeItem[];
+  party_alignment?: PartyAlignmentStats;
+  district_demographics?: DistrictDemographics;
+  news_feed?: NewsArticleItem[];
   affiliations: string[];
   controversies: string[];
 }
@@ -55,7 +126,7 @@ export async function fetchPoliticians(query?: string): Promise<PoliticianSearch
     headers: {
       "Content-Type": "application/json",
     },
-    next: { revalidate: 60 }, // Cache response for 60 seconds (Next.js specific)
+    next: { revalidate: 60 },
   });
 
   if (!response.ok) {
@@ -74,7 +145,7 @@ export async function fetchPoliticianById(id: string): Promise<PoliticianDetail>
     headers: {
       "Content-Type": "application/json",
     },
-    next: { revalidate: 60 }, // Cache response for 60 seconds
+    next: { revalidate: 60 },
   });
 
   if (!response.ok) {
@@ -113,6 +184,19 @@ export interface PacItem {
   date?: string;
 }
 
+export interface IndustrySectorItem {
+  sector_name: string;
+  amount: number;
+  percentage: number;
+}
+
+export interface IndependentExpenditureItem {
+  committee_name: string;
+  support_or_oppose: string;
+  amount: number;
+  description?: string;
+}
+
 export interface FinanceSummary {
   id: string;
   candidate_id: string;
@@ -126,8 +210,9 @@ export interface FinanceSummary {
   donors: DonorItem[];
   pacs?: PacItem[];
   super_pacs?: PacItem[];
+  industry_sectors?: IndustrySectorItem[];
+  independent_expenditures?: IndependentExpenditureItem[];
 }
-
 
 /**
  * Fetch campaign finance summary and history for a politician by ID
@@ -149,15 +234,6 @@ export async function fetchPoliticianFinance(id: string): Promise<Record<string,
   }
 
   return response.json();
-}
-
-export interface VotedLegislationItem {
-  bill_number: string;
-  title: string;
-  vote_date: string;
-  vote_position: "YEA" | "NAY" | "PRESENT" | "NOT VOTING";
-  result: string;
-  description: string;
 }
 
 export interface PoliticianLegislationData {
@@ -321,9 +397,6 @@ export interface LocalLookupResponse {
   civic_officials: CivicOfficialItem[];
 }
 
-/**
- * Fetch list of official counties for a State
- */
 export async function fetchStateCounties(state: string): Promise<string[]> {
   if (!state) return [];
   const url = new URL(`${API_BASE_URL}/local/counties`);
@@ -342,9 +415,6 @@ export async function fetchStateCounties(state: string): Promise<string[]> {
   return response.json();
 }
 
-/**
- * Fetch local elections, incumbents, and running candidates by State, District, Address, or County
- */
 export async function fetchLocalElections(
   state: string,
   district?: string,
@@ -372,12 +442,6 @@ export async function fetchLocalElections(
   return response.json();
 }
 
-export interface PolicyStanceItem {
-  category: string;
-  position: string;
-  details: string;
-}
-
 export interface CandidateDetailResponse {
   id: string;
   name: string;
@@ -400,9 +464,6 @@ export interface CandidateDetailResponse {
   sponsored_bills: SponsoredLegislationItem[];
 }
 
-/**
- * Fetch running candidate detail profile by Candidate ID
- */
 export async function fetchCandidateById(candidateId: string): Promise<CandidateDetailResponse> {
   const response = await fetch(`${API_BASE_URL}/candidates/${candidateId}`, {
     method: "GET",
@@ -483,5 +544,3 @@ export async function fetchJudgeById(judgeId: string): Promise<JudgeDetail> {
 
   return response.json();
 }
-
-

@@ -20,6 +20,17 @@ class PacItem(BaseModel):
     percentage: float = 0.0
     date: Optional[str] = None
 
+class IndustrySectorItem(BaseModel):
+    sector_name: str
+    amount: float
+    percentage: float
+
+class IndependentExpenditureItem(BaseModel):
+    committee_name: str
+    support_or_oppose: str  # "SUPPORT" or "OPPOSE"
+    amount: float
+    description: Optional[str] = None
+
 class FinanceHistoryItem(BaseModel):
     cycle: str
     small_donations: float
@@ -39,4 +50,6 @@ class FinanceSummary(BaseModel):
     donors: List[DonorItem] = []
     pacs: List[PacItem] = []
     super_pacs: List[PacItem] = []
+    industry_sectors: List[IndustrySectorItem] = []
+    independent_expenditures: List[IndependentExpenditureItem] = []
 # endregion

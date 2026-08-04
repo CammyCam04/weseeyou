@@ -19,6 +19,8 @@ export const metadata: Metadata = {
   description: "Track U.S. politicians, Congressional committees, campaign finance, and official legislation.",
 };
 
+export const dynamic = "force-dynamic";
+
 export default function RootLayout({
   children,
 }: Readonly<{
