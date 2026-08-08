@@ -126,7 +126,7 @@ def _get_independent_expenditures(fec_id: str, cycle: int) -> List[IndependentEx
     return expenditures[:10]
 
 
-def _get_itemized_pacs(committee_ids: List[str]):
+def _get_itemized_pacs(committee_ids: List[str], cycle: int = None):
     if not FEC_API_KEY or not committee_ids:
         return [], []
 
@@ -143,6 +143,9 @@ def _get_itemized_pacs(committee_ids: List[str]):
                 "per_page": 50,
                 "sort": "-contribution_receipt_amount"
             }
+            if cycle:
+                params["cycle"] = cycle
+
             resp = requests.get(url, params=params, timeout=5)
             if resp.status_code == 200:
                 for row in resp.json().get("results", []):
@@ -154,7 +157,7 @@ def _get_itemized_pacs(committee_ids: List[str]):
                     name = raw_name.strip().title()
                     name_upper = name.upper()
 
-                    if any(kw in name_upper for kw in ("SUPER PAC", "ACTION", "VICTORY", "INDEPENDENT EXPENDITURE")):
+                    if any(kw in name_upper for kw in ("SUPER PAC", "ACTION", "VICTORY", "INDEPENDENT EXPENDITURE", "CAREY")):
                         super_pac_totals[name] += amt
                     else:
                         pac_totals[name] += amt
@@ -162,19 +165,17 @@ def _get_itemized_pacs(committee_ids: List[str]):
             print(f"Error fetching PACs for committee {comm_id}: {ex}")
 
     total_pac_sum = sum(pac_totals.values())
-    total_super_pac_sum = sum(super_pac_totals.values())
 
     pacs = []
-    for name, amt in sorted(pac_totals.items(), key=lambda x: x[1], reverse=True)[:10]:
+    for name, amt in sorted(pac_totals.items(), key=lambda x: x[1], reverse=True)[:15]:
         pct = (amt / total_pac_sum * 100.0) if total_pac_sum > 0 else 0.0
         pacs.append(PacItem(name=name, type="Traditional PAC", amount=round(amt, 2), percentage=round(pct, 1)))
 
-    super_pacs = []
-    for name, amt in sorted(super_pac_totals.items(), key=lambda x: x[1], reverse=True)[:10]:
-        pct = (amt / total_super_pac_sum * 100.0) if total_super_pac_sum > 0 else 0.0
-        super_pacs.append(PacItem(name=name, type="Super PAC / Action Fund", amount=round(amt, 2), percentage=round(pct, 1)))
+    direct_super_pacs = []
+    for name, amt in sorted(super_pac_totals.items(), key=lambda x: x[1], reverse=True)[:15]:
+        direct_super_pacs.append(PacItem(name=name, type="Super PAC / Action Fund", amount=round(amt, 2), percentage=0.0))
 
-    return pacs, super_pacs
+    return pacs, direct_super_pacs
 
 
 # region Main Finance Service
@@ -299,8 +300,22 @@ def get_campaign_finance(bioguide_id: str) -> Dict[str, FinanceSummary]:
             
             committee_ids = _get_candidate_committees(fec_id)
             donors = _get_top_employers(committee_ids, ey)
-            pacs, super_pacs = _get_itemized_pacs(committee_ids)
+            pacs, direct_super_pacs = _get_itemized_pacs(committee_ids, ey)
             independent_expenditures = _get_independent_expenditures(fec_id, ey)
+
+            # Consolidate Super PACs and Outside Independent Expenditure Committees
+            super_pac_map = {}
+            for sp in direct_super_pacs:
+                super_pac_map[sp.name] = sp.amount
+
+            for ie in independent_expenditures:
+                super_pac_map[ie.committee_name] = super_pac_map.get(ie.committee_name, 0.0) + ie.amount
+
+            total_sp_amount = sum(super_pac_map.values())
+            super_pacs = []
+            for name, amt in sorted(super_pac_map.items(), key=lambda x: x[1], reverse=True)[:15]:
+                pct = round((amt / total_sp_amount * 100.0), 1) if total_sp_amount > 0 else 0.0
+                super_pacs.append(PacItem(name=name, type="Super PAC / Independent Fund", amount=round(amt, 2), percentage=pct))
 
             campaigns[label] = FinanceSummary(
                 id=bioguide_id,

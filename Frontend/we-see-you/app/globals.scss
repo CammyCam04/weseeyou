@@ -1,5 +1,5 @@
 // app/globals.scss
-@use "./styles/variables" as *;
+@use "../styles/variables" as *;
 
 :root {
   --background: #{$color-bg-page-light};

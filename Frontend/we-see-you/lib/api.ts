@@ -60,7 +60,7 @@ export interface StockTradeItem {
   transaction_date: string;
   disclosure_date: string;
   amount_range: string;
-  owner: str;
+  owner: string;
 }
 
 export interface PartyAlignmentStats {
@@ -197,6 +197,13 @@ export interface IndependentExpenditureItem {
   description?: string;
 }
 
+export interface TopDonorItem {
+  name: string;
+  total_amount: number;
+  individual_amount: number;
+  pac_amount: number;
+}
+
 export interface FinanceSummary {
   id: string;
   candidate_id: string;
@@ -207,7 +214,8 @@ export interface FinanceSummary {
   pac_donations_pct: number;
   super_pac_donations_pct: number;
   history: FinanceHistoryItem[];
-  donors: DonorItem[];
+  donors?: DonorItem[];
+  top_donors?: TopDonorItem[];
   pacs?: PacItem[];
   super_pacs?: PacItem[];
   industry_sectors?: IndustrySectorItem[];

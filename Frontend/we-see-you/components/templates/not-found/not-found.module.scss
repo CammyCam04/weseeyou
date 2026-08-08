@@ -1,0 +1,47 @@
+// app/components/templates/not-found/not-found.module.scss
+@use "sass:color";
+@use "../../../styles/variables" as *;
+@use "../../../styles/mixins" as *;
+
+.container {
+  max-width: 600px;
+  margin: 4rem auto;
+  padding: 3rem 2rem;
+  text-align: center;
+  background-color: var(--card-bg);
+  border: 1px solid var(--border-color);
+  border-radius: $radius-lg;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+
+  h2 {
+    font-size: 1.75rem;
+    font-weight: 800;
+    color: var(--foreground);
+    margin: 0 0 0.5rem 0;
+  }
+
+  p {
+    font-size: 1rem;
+    color: var(--foreground-secondary);
+    margin: 0 0 1.5rem 0;
+  }
+}
+
+.homeBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  background-color: $color-accent;
+  color: #ffffff;
+  font-size: 0.92rem;
+  font-weight: 600;
+  padding: 0.6rem 1.25rem;
+  border-radius: $radius-md;
+  text-decoration: none;
+  transition: background-color 0.15s ease, transform 0.15s ease;
+
+  &:hover {
+    background-color: $color-accent-hover;
+    transform: translateY(-1px);
+  }
+}
