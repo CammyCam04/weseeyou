@@ -12,10 +12,17 @@ export default async function ProfileView({ id }: ProfileViewProps) {
 
   try {
     politician = await fetchPoliticianById(id);
-    finance = await fetchPoliticianFinance(id);
   } catch (err: unknown) {
     console.error(err);
     errorMsg = err instanceof Error ? err.message : "Could not retrieve politician profile.";
+  }
+
+  if (politician) {
+    try {
+      finance = await fetchPoliticianFinance(id);
+    } catch (err: unknown) {
+      console.warn("Could not retrieve politician finance records:", err);
+    }
   }
 
   return (

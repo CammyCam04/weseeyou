@@ -80,6 +80,17 @@ class NewsArticleItem(BaseModel):
     url: str
     snippet: Optional[str] = None
 
+class TermHistoryItem(BaseModel):
+    chamber: Chamber
+    title: str
+    state: str
+    district: Optional[int] = None
+    start_year: str
+    end_year: str
+    party: Optional[Party] = None
+    how: Optional[str] = None
+    is_current: bool = False
+
 class PoliticianDetail(PoliticianBase):
     chamber: Chamber
     date_of_birth: Optional[str] = None
@@ -105,4 +116,7 @@ class PoliticianDetail(PoliticianBase):
     controversies: List[str] = []
     fec_id: Optional[str] = None
     fec_ids: List[str] = []
+    terms_history: List[TermHistoryItem] = []
+    career_chambers: List[str] = []
+    has_multi_chamber_history: bool = False
 # endregion

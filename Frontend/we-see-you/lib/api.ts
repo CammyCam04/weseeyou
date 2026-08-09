@@ -85,6 +85,18 @@ export interface NewsArticleItem {
   snippet?: string;
 }
 
+export interface TermHistoryItem {
+  chamber: Chamber;
+  title: string;
+  state: string;
+  district?: number;
+  start_year: string;
+  end_year: string;
+  party?: Party;
+  how?: string;
+  is_current: boolean;
+}
+
 export interface PoliticianDetail extends PoliticianSearchItem {
   chamber: Chamber;
   date_of_birth?: string;
@@ -108,6 +120,9 @@ export interface PoliticianDetail extends PoliticianSearchItem {
   news_feed?: NewsArticleItem[];
   affiliations: string[];
   controversies: string[];
+  terms_history?: TermHistoryItem[];
+  career_chambers?: string[];
+  has_multi_chamber_history?: boolean;
 }
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api";

@@ -251,6 +251,152 @@
   color: var(--foreground-muted);
 }
 
+/* Multi-Chamber Notice & Callout */
+.multiChamberCallout {
+  background: linear-gradient(135deg, rgba($color-accent, 0.12), rgba(168, 85, 247, 0.08));
+  border: 1px solid rgba($color-accent, 0.3);
+  border-radius: $radius-md;
+  padding: 1rem 1.25rem;
+  display: flex;
+  align-items: flex-start;
+  gap: 0.85rem;
+  margin-bottom: 1.25rem;
+
+  .calloutIcon {
+    font-size: 1.35rem;
+    line-height: 1;
+    flex-shrink: 0;
+  }
+
+  .calloutContent {
+    h4 {
+      font-size: 0.92rem;
+      font-weight: 700;
+      color: var(--foreground);
+      margin: 0 0 0.35rem 0;
+    }
+
+    p {
+      font-size: 0.84rem;
+      color: var(--foreground-secondary);
+      line-height: 1.5;
+      margin: 0;
+    }
+  }
+}
+
+/* Terms History Timeline */
+.termsList {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.termItem {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  padding: 0.85rem 1rem;
+  border-radius: $radius-sm;
+  background-color: rgba(0, 0, 0, 0.18);
+  border: 1px solid var(--border-color);
+  transition: all 0.15s ease;
+
+  &:hover {
+    border-color: rgba(255, 255, 255, 0.15);
+    background-color: rgba(0, 0, 0, 0.25);
+  }
+
+  &.activeTermItem {
+    border-color: rgba(16, 185, 129, 0.4);
+    background: linear-gradient(135deg, rgba(16, 185, 129, 0.06), rgba(0, 0, 0, 0.2));
+  }
+}
+
+.termLeft {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.termTitle {
+  font-size: 0.92rem;
+  font-weight: 700;
+  color: var(--foreground);
+}
+
+.termChamber {
+  font-size: 0.78rem;
+  color: var(--foreground-muted);
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.termRight {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+}
+
+.termYears {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--foreground-secondary);
+}
+
+.termStatusPill {
+  font-size: 0.7rem;
+  font-weight: 700;
+  padding: 0.15rem 0.5rem;
+  border-radius: 9999px;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+
+  &.activeStatus {
+    background: rgba(16, 185, 129, 0.2);
+    color: #34d399;
+    border: 1px solid rgba(16, 185, 129, 0.4);
+  }
+
+  &.pastStatus {
+    background: rgba(148, 163, 184, 0.12);
+    color: #94a3b8;
+    border: 1px solid rgba(148, 163, 184, 0.25);
+  }
+}
+
+/* Sidebar Career Chambers Badge Group */
+.careerChambersGroup {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  text-align: left;
+  margin-top: 0.25rem;
+}
+
+.careerChamberChip {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.35rem 0.65rem;
+  border-radius: $radius-sm;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid var(--border-color);
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--foreground-secondary);
+
+  &.activeChip {
+    border-color: rgba($color-accent, 0.4);
+    color: $color-accent-light;
+    background: rgba($color-accent, 0.08);
+  }
+}
+
 .statusContainer {
   max-width: 600px;
   margin: 4rem auto;
@@ -280,3 +426,4 @@
     position: static;
   }
 }
+

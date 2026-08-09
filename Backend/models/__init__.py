@@ -10,13 +10,15 @@ from .politician import (
     StockTradeItem,
     PartyAlignmentStats,
     DistrictDemographics,
-    NewsArticleItem
+    NewsArticleItem,
+    TermHistoryItem
 )
 from .finance import (
     FinanceHistoryItem,
     FinanceSummary,
     ContributorItem,
     DonorItem,
+    TopDonorItem,
     PacItem,
     IndustrySectorItem,
     IndependentExpenditureItem

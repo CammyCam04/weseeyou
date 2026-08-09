@@ -49,12 +49,15 @@ export default function PortalView() {
       setProfileLoading(true);
       setProfileError(null);
       try {
-        const [prof, fin] = await Promise.all([
-          fetchPoliticianById(selectedPoliticianId!),
-          fetchPoliticianFinance(selectedPoliticianId!),
-        ]);
+        const prof = await fetchPoliticianById(selectedPoliticianId!);
         setProfileData(prof);
-        setFinanceData(fin);
+        try {
+          const fin = await fetchPoliticianFinance(selectedPoliticianId!);
+          setFinanceData(fin);
+        } catch (finErr) {
+          console.warn("Finance fetch warning:", finErr);
+          setFinanceData(null);
+        }
       } catch (err: unknown) {
         console.error(err);
         const msg = err instanceof Error ? err.message : "Failed to load politician profile.";

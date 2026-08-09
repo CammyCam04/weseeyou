@@ -4,7 +4,7 @@ import requests
 from bs4 import BeautifulSoup
 from collections import defaultdict
 from typing import List, Dict, Optional
-from models import PoliticianDetail
+from models import PoliticianDetail, TermHistoryItem
 from enums import Party, Chamber
 # endregion
 
@@ -97,7 +97,20 @@ def _load_dynamic_executive_members() -> List[PoliticianDetail]:
                                     stances=[],
                                     affiliations=[f"Executive Branch Officer ({office_title})"],
                                     controversies=[],
-                                    fec_ids=[]
+                                    fec_ids=[],
+                                    terms_history=[
+                                        TermHistoryItem(
+                                            chamber=Chamber.EXECUTIVE,
+                                            title=office_title,
+                                            state=home_state,
+                                            start_year="2025",
+                                            end_year="2029",
+                                            party=Party.REPUBLICAN,
+                                            is_current=True
+                                        )
+                                    ],
+                                    career_chambers=["Executive"],
+                                    has_multi_chamber_history=False
                                 )
                             )
                             parsed_count += 1
@@ -136,24 +149,48 @@ def load_congress_data() -> List[PoliticianDetail]:
     except Exception as e:
         print(f"Warning: Could not load social media data: {e}")
 
-    # Load committee membership dynamically
+    # Load committee definitions and membership dynamically
     comm_map = defaultdict(list)
     try:
-        print("Fetching committee membership data...")
-        comm_res = requests.get("https://unitedstates.github.io/congress-legislators/committee-membership-current.json")
-        if comm_res.status_code == 200:
-            c_data = comm_res.json()
+        print("Fetching committee definitions and membership data...")
+        comm_defs_url = "https://unitedstates.github.io/congress-legislators/committees-current.json"
+        comm_memb_url = "https://unitedstates.github.io/congress-legislators/committee-membership-current.json"
+        
+        defs_res = requests.get(comm_defs_url, timeout=10)
+        memb_res = requests.get(comm_memb_url, timeout=10)
+        
+        comm_names_map = {}
+        if defs_res.status_code == 200:
+            for c in defs_res.json():
+                t_id = c.get("thomas_id")
+                c_type = c.get("type", "").capitalize()
+                c_name = c.get("name", "")
+                full_c_name = f"{c_type} Committee on {c_name}" if not c_name.lower().startswith(("senate", "house", "joint")) else c_name
+                if t_id:
+                    comm_names_map[t_id] = full_c_name
+                    for sub in c.get("subcommittees", []):
+                        sub_id = sub.get("thomas_id")
+                        sub_name = sub.get("name", "")
+                        if sub_id:
+                            comm_names_map[f"{t_id}{sub_id}"] = f"{full_c_name}: Subcommittee on {sub_name}"
+
+        if memb_res.status_code == 200:
+            c_data = memb_res.json()
             for comm_id, members in c_data.items():
+                c_label = comm_names_map.get(comm_id)
                 for m in members:
                     b_id = m.get("bioguide")
                     if b_id:
                         title = m.get("title")
-                        role_str = f"Committee {comm_id}"
+                        if c_label:
+                            role_str = f"Committee {comm_id} -- {c_label}"
+                        else:
+                            role_str = f"Committee {comm_id}"
                         if title:
                             role_str += f" ({title})"
                         comm_map[b_id].append(role_str)
     except Exception as e:
-        print(f"Warning: Could not load committee membership data: {e}")
+        print(f"Warning: Could not load committee data: {e}")
 
     politicians = []
     for item in raw_data:
@@ -200,8 +237,59 @@ def load_congress_data() -> List[PoliticianDetail]:
 
         affiliations = comm_map.get(b_id, [])
 
-        fec_ids = item.get("id", {}).get("fec", [])
+        raw_fec_ids = item.get("id", {}).get("fec", [])
+        chamber_prefix = "S" if chamber == Chamber.SENATE else "H"
+        matching_fec = [fid for fid in raw_fec_ids if fid.startswith(chamber_prefix)]
+        other_fec = [fid for fid in raw_fec_ids if not fid.startswith(chamber_prefix)]
+        fec_ids = matching_fec + other_fec
         primary_fec_id = fec_ids[0] if fec_ids else None
+
+        # Build comprehensive terms history across the official's entire Congressional tenure
+        terms_history = []
+        for i, t in enumerate(terms):
+            t_type = t.get("type")
+            if t_type == "sen":
+                t_chamber = Chamber.SENATE
+                t_title = f"Senator from {t.get('state', state)}"
+            elif t_type == "rep":
+                t_chamber = Chamber.HOUSE
+                t_dist = t.get("district")
+                t_title = f"Representative for {t.get('state', state)}-{t_dist}" if t_dist is not None else f"Representative for {t.get('state', state)}"
+            else:
+                t_chamber = Chamber.EXECUTIVE
+                t_title = "Executive Officer"
+
+            t_party_str = t.get("party", "Independent")
+            if t_party_str == "Democrat":
+                t_party = Party.DEMOCRAT
+            elif t_party_str == "Republican":
+                t_party = Party.REPUBLICAN
+            else:
+                t_party = Party.INDEPENDENT
+
+            terms_history.append(
+                TermHistoryItem(
+                    chamber=t_chamber,
+                    title=t_title,
+                    state=t.get("state", state),
+                    district=t.get("district"),
+                    start_year=str(t.get("start", "")[:4]),
+                    end_year=str(t.get("end", "")[:4]),
+                    party=t_party,
+                    how=t.get("how"),
+                    is_current=(i == len(terms) - 1)
+                )
+            )
+
+        # Reverse so current/latest term is first
+        terms_history_rev = list(reversed(terms_history))
+        unique_chambers = []
+        for th in terms_history_rev:
+            c_name = th.chamber.value if hasattr(th.chamber, "value") else str(th.chamber)
+            if c_name not in unique_chambers:
+                unique_chambers.append(c_name)
+
+        has_multi_chamber = len(unique_chambers) > 1
 
         img_url = f"https://unitedstates.github.io/images/congress/225x275/{b_id}.jpg"
         wiki_id = item.get("id", {}).get("wikipedia")
@@ -227,7 +315,10 @@ def load_congress_data() -> List[PoliticianDetail]:
             affiliations=affiliations,
             controversies=[],
             fec_id=primary_fec_id,
-            fec_ids=fec_ids
+            fec_ids=fec_ids,
+            terms_history=terms_history_rev,
+            career_chambers=unique_chambers,
+            has_multi_chamber_history=has_multi_chamber
         )
         politicians.append(p)
 

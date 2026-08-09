@@ -31,6 +31,12 @@ class IndependentExpenditureItem(BaseModel):
     amount: float
     description: Optional[str] = None
 
+class TopDonorItem(BaseModel):
+    name: str
+    total_amount: float
+    individual_amount: float = 0.0
+    pac_amount: float = 0.0
+
 class FinanceHistoryItem(BaseModel):
     cycle: str
     small_donations: float
@@ -48,6 +54,7 @@ class FinanceSummary(BaseModel):
     super_pac_donations_pct: float
     history: List[FinanceHistoryItem]
     donors: List[DonorItem] = []
+    top_donors: List[TopDonorItem] = []
     pacs: List[PacItem] = []
     super_pacs: List[PacItem] = []
     industry_sectors: List[IndustrySectorItem] = []

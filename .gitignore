@@ -19,3 +19,6 @@ build/
 
 # Personal Folders
 Markdowns/
+
+#Terraform
+terraform/
