@@ -1,0 +1,44 @@
+// app/components/templates/Avatar/Avatar.module.scss
+@use "sass:color";
+@use "../../../styles/variables" as *;
+@use "../../../styles/mixins" as *;
+
+.avatarWrapper {
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  overflow: hidden;
+  background-color: var(--border-color);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  border: 2px solid var(--border-color);
+  transition: border-color 0.2s ease;
+
+  &.large {
+    width: 110px;
+    height: 110px;
+    border-width: 3px;
+    margin-bottom: 0.75rem;
+  }
+}
+
+.avatar {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.avatarPlaceholder {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--foreground-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+
+  &.large {
+    font-size: 2.2rem;
+  }
+}

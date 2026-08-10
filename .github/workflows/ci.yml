@@ -6,9 +6,13 @@ on:
   pull_request:
     branches: [ main, master ]
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   frontend:
-    name: Frontend Quality Checks
+    name: Frontend Quality & Unit Tests
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -34,8 +38,16 @@ jobs:
       - name: Run TypeScript Compiler Check
         run: npx tsc --noEmit
 
+      - name: Run Frontend Unit Tests
+        run: npm run test
+
+      - name: Verify Production Build
+        run: npm run build
+        env:
+          NEXT_TELEMETRY_DISABLED: 1
+
   backend:
-    name: Backend Quality Checks
+    name: Backend Quality & Unit Tests
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -57,5 +69,32 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements.txt
 
+      - name: Run Backend Unit Tests (Pytest)
+        run: pytest -v
+
       - name: Run Import Validation Test
         run: python test_imports.py
+
+  terraform:
+    name: Terraform Infrastructure Validation
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: terraform
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: "1.7.0"
+
+      - name: Terraform Format Check
+        run: terraform fmt -check -recursive
+
+      - name: Terraform Init & Validate
+        run: |
+          terraform init -backend=false
+          terraform validate

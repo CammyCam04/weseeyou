@@ -1,0 +1,10 @@
+# Backend Environment Files
+.env
+.env.*
+!.env.example
+
+# Python Caches & Virtualenvs
+__pycache__/
+*.py[cod]
+.venv/
+venv/
