@@ -48,42 +48,42 @@ export default function Header({ activeTab = "national", onTabChange }: HeaderPr
         </div>
 
         <nav className={styles.navLinks}>
-          <a
+          <Link
             href="/"
             onClick={(e) => handleNavClick(e, "national")}
             className={`${styles.navItem} ${activeTab === "national" ? styles.active : ""}`}
           >
             National
-          </a>
-          <a
+          </Link>
+          <Link
             href="/state"
             onClick={(e) => handleNavClick(e, "state")}
             className={`${styles.navItem} ${activeTab === "state" ? styles.active : ""}`}
           >
             State
-          </a>
-          <a
+          </Link>
+          <Link
             href="/county-municipality"
             onClick={(e) => handleNavClick(e, "county-municipality")}
             className={`${styles.navItem} ${activeTab === "county-municipality" ? styles.active : ""}`}
           >
             County / Municipal
-          </a>
-          <a
+          </Link>
+          <Link
             href="/about"
             onClick={(e) => handleNavClick(e, "about")}
             className={`${styles.navItem} ${activeTab === "about" ? styles.active : ""}`}
           >
             About & Methodology
-          </a>
+          </Link>
           {SHOW_TEST_API_NAV && (
-            <a
+            <Link
               href="/test-json"
               onClick={(e) => handleNavClick(e, "test-json")}
               className={`${styles.navItem} ${styles.debugLink} ${activeTab === "test-json" ? styles.active : ""}`}
             >
               Raw Data (API Test)
-            </a>
+            </Link>
           )}
         </nav>
       </div>

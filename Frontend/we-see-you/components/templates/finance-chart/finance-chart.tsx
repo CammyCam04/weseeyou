@@ -54,7 +54,7 @@ export default function FinanceChart({
   campaigns,
   currentChamber,
   termsHistory,
-  politicianName,
+  politicianName: _politicianName,
 }: FinanceChartProps) {
   const chartWrapperRef = useRef<HTMLDivElement | null>(null);
   const svgContainerRef = useRef<HTMLDivElement | null>(null);
