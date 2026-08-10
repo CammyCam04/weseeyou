@@ -769,6 +769,33 @@ def get_campaign_finance(bioguide_id: str) -> Dict[str, FinanceSummary]:
                     for d in donors
                 ]
 
+            # Reconcile PAC and outside spending totals with itemized records
+            itemized_pac_sum = sum(p.amount for p in pacs)
+            itemized_sp_sum = sum(sp.amount for sp in super_pacs)
+
+            if itemized_pac_sum > pac_donations:
+                pac_donations = itemized_pac_sum
+
+            if itemized_sp_sum > 0:
+                calc_sp_dollars = max(itemized_sp_sum, total_donations - small_donations - pac_donations)
+            else:
+                calc_sp_dollars = max(0.0, total_donations - small_donations - pac_donations)
+
+            if (small_donations + pac_donations + calc_sp_dollars) > total_donations:
+                total_donations = small_donations + pac_donations + calc_sp_dollars
+
+            if total_donations > 0:
+                pct_small = (small_donations / total_donations) * 100.0
+                pct_pac = (pac_donations / total_donations) * 100.0
+                pct_super_pac = max(0.0, 100.0 - pct_small - pct_pac)
+
+            if history:
+                for h in history:
+                    if str(h.cycle) == str(ey):
+                        h.pac_donations = round(pac_donations, 2)
+                        h.super_pac_donations = round(calc_sp_dollars, 2)
+                        h.small_donations = round(small_donations, 2)
+
             campaigns[label] = FinanceSummary(
                 id=bioguide_id,
                 candidate_id=fec_id,

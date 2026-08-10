@@ -1,3 +1,5 @@
+"use client";
+
 import { PortalView } from "@/components";
 
 export default function Page() {

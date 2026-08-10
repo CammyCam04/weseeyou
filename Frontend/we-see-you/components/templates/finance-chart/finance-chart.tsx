@@ -67,6 +67,7 @@ export default function FinanceChart({
   const [isDonorsExpanded, setIsDonorsExpanded] = useState(false);
   const [expandedDonors, setExpandedDonors] = useState<Set<number>>(new Set());
   const [pacTab, setPacTab] = useState<"all" | "pacs" | "superPacs">("all");
+  const [isPacsExpanded, setIsPacsExpanded] = useState(false);
   const [isTenureExpanded, setIsTenureExpanded] = useState(false);
 
   // Disable browser window scrolling when the mouse is positioned over the cycle growth graph
@@ -148,16 +149,22 @@ export default function FinanceChart({
 
   // Update selected campaign key when visibleKeys change
   useEffect(() => {
-    if (!visibleKeys.includes(selectedCampaignKey)) {
-      setSelectedCampaignKey(visibleKeys[0] || "");
+    if (selectedCampaignKey !== "all_career" && !visibleKeys.includes(selectedCampaignKey)) {
+      setSelectedCampaignKey(chamberFilter === "all" ? "all_career" : (visibleKeys[0] || allKeys[0] || ""));
       setExpandedDonors(new Set());
       setIsDonorsExpanded(false);
       setIsTenureExpanded(false);
     }
-  }, [visibleKeys, selectedCampaignKey]);
+  }, [visibleKeys, selectedCampaignKey, chamberFilter, allKeys]);
 
   const handleChamberFilterChange = (chamber: string) => {
     setChamberFilter(chamber);
+    if (chamber === "all") {
+      setSelectedCampaignKey("all_career");
+    } else {
+      const firstInChamber = allKeys.find((k) => campaigns[k]?.office === chamber);
+      setSelectedCampaignKey(firstInChamber || visibleKeys[0] || allKeys[0] || "");
+    }
     setExpandedDonors(new Set());
     setIsDonorsExpanded(false);
     setIsTenureExpanded(false);
@@ -184,22 +191,63 @@ export default function FinanceChart({
     ? `${earliestYear} – ${latestYear}`
     : latestYear;
 
-  // Career fundraising statistics across chambers
+  // Career fundraising statistics across all campaigns & chambers
   const careerStats = useMemo(() => {
     let totalRaised = 0;
+    let smallTotal = 0;
+    let pacTotal = 0;
+    let superPacTotal = 0;
     const byChamber: Record<string, { total: number; count: number; earliest: string; latest: string }> = {};
+
+    const pacMap = new Map<string, { name: string; type: string; amount: number; percentage: number }>();
+    const superPacMap = new Map<string, { name: string; type: string; amount: number; percentage: number }>();
 
     allKeys.forEach((k) => {
       const camp = campaigns[k];
       if (!camp) return;
-      totalRaised += camp.total_donations || 0;
+
+      const cPacSum = (camp.pacs || []).reduce((sum, p) => sum + (p.amount || 0), 0);
+      const cSuperPacSum = (camp.super_pacs || []).reduce((sum, sp) => sum + (sp.amount || 0), 0);
+      const rawTotal = camp.total_donations || 0;
+      const cSmallRaw = camp.small_donations_pct ? (camp.small_donations_pct / 100) * rawTotal : 0;
+      const cTotal = Math.max(rawTotal, cSmallRaw + cPacSum + cSuperPacSum);
+
+      const cPacDollar = cPacSum > 0 ? cPacSum : ((camp.pac_donations_pct || 0) / 100) * cTotal;
+      const cSuperPacDollar = cSuperPacSum > 0 ? cSuperPacSum : ((camp.super_pac_donations_pct || 0) / 100) * cTotal;
+      const cSmallDollar = Math.max(0, cTotal - cPacDollar - cSuperPacDollar);
+
+      totalRaised += cTotal;
+      smallTotal += cSmallDollar;
+      pacTotal += cPacDollar;
+      superPacTotal += cSuperPacDollar;
+
+      // Consolidate career PACs
+      (camp.pacs || []).forEach((p) => {
+        const key = p.name.trim().toLowerCase();
+        if (!pacMap.has(key)) {
+          pacMap.set(key, { ...p, amount: p.amount || 0 });
+        } else {
+          pacMap.get(key)!.amount += p.amount || 0;
+        }
+      });
+
+      // Consolidate career Super PACs
+      (camp.super_pacs || []).forEach((sp) => {
+        const key = sp.name.trim().toLowerCase();
+        if (!superPacMap.has(key)) {
+          superPacMap.set(key, { ...sp, amount: sp.amount || 0 });
+        } else {
+          superPacMap.get(key)!.amount += sp.amount || 0;
+        }
+      });
+
       const office = camp.office || "General";
       const year = k.match(/\b\d{4}\b/)?.[0] || "";
 
       if (!byChamber[office]) {
         byChamber[office] = { total: 0, count: 0, earliest: year, latest: year };
       }
-      byChamber[office].total += camp.total_donations || 0;
+      byChamber[office].total += cTotal;
       byChamber[office].count += 1;
       if (year && (!byChamber[office].earliest || year < byChamber[office].earliest)) {
         byChamber[office].earliest = year;
@@ -209,8 +257,103 @@ export default function FinanceChart({
       }
     });
 
-    return { totalRaised, byChamber };
+    const smallPct = totalRaised > 0 ? Math.round((smallTotal / totalRaised) * 1000) / 10 : 0;
+    const pacPct = totalRaised > 0 ? Math.round((pacTotal / totalRaised) * 1000) / 10 : 0;
+    const superPacPct = totalRaised > 0 ? Math.round(Math.max(0, 100 - smallPct - pacPct) * 10) / 10 : 0;
+
+    const careerPacs = Array.from(pacMap.values())
+      .sort((a, b) => b.amount - a.amount)
+      .map((p) => ({
+        ...p,
+        percentage: pacTotal > 0 ? Math.round((p.amount / pacTotal) * 1000) / 10 : 0,
+      }));
+
+    const careerSuperPacs = Array.from(superPacMap.values())
+      .sort((a, b) => b.amount - a.amount)
+      .map((sp) => ({
+        ...sp,
+        percentage: superPacTotal > 0 ? Math.round((sp.amount / superPacTotal) * 1000) / 10 : 0,
+      }));
+
+    return {
+      totalRaised,
+      smallTotal,
+      pacTotal,
+      superPacTotal,
+      smallPct,
+      pacPct,
+      superPacPct,
+      byChamber,
+      careerPacs,
+      careerSuperPacs,
+    };
   }, [allKeys, campaigns]);
+
+  const isCompleteCareerMode = Boolean(
+    (chamberFilter === "all" && hasMultipleChambers) || selectedCampaignKey === "all_career"
+  );
+
+  const pacs = data?.pacs || [];
+  const superPacs = data?.super_pacs || [];
+
+  // Active PAC items for either Single Cycle or Complete Career Lifetime
+  const activePacs = isCompleteCareerMode ? careerStats.careerPacs : pacs;
+  const activeSuperPacs = isCompleteCareerMode ? careerStats.careerSuperPacs : superPacs;
+
+  const allPacItems = [...activePacs, ...activeSuperPacs].sort((a, b) => b.amount - a.amount);
+  const currentTabPacItems =
+    pacTab === "all" ? allPacItems : pacTab === "pacs" ? activePacs : activeSuperPacs;
+  const displayPacItems = isPacsExpanded
+    ? currentTabPacItems
+    : currentTabPacItems.slice(0, 10);
+  const maxPacAmount = Math.max(...allPacItems.map((i) => i.amount), 1);
+
+  const isSuperOrOutside = (item: PacItem) => {
+    const t = (item.type || "").toLowerCase();
+    return (
+      t.includes("super") ||
+      t.includes("501(c)") ||
+      t.includes("independent") ||
+      t.includes("outside") ||
+      t.includes("action fund") ||
+      t.includes("leadership fund") ||
+      activeSuperPacs.some((sp) => sp.name.toLowerCase() === item.name.toLowerCase())
+    );
+  };
+
+  // Derived dollar values and synchronized percentages for current active campaign
+  const itemizedPacSum = useMemo(() => {
+    return (data?.pacs || []).reduce((sum, p) => sum + (p.amount || 0), 0);
+  }, [data?.pacs]);
+
+  const itemizedSuperPacSum = useMemo(() => {
+    return (data?.super_pacs || []).reduce((sum, sp) => sum + (sp.amount || 0), 0);
+  }, [data?.super_pacs]);
+
+  const totalRaised = useMemo(() => {
+    const raw = data?.total_donations || 0;
+    const rawSmall = data?.small_donations_pct ? (data.small_donations_pct / 100) * raw : 0;
+    const derivedSum = rawSmall + itemizedPacSum + itemizedSuperPacSum;
+    return Math.max(raw, derivedSum);
+  }, [data, itemizedPacSum, itemizedSuperPacSum]);
+
+  const pacDollar = itemizedPacSum > 0 ? itemizedPacSum : ((data?.pac_donations_pct || 0) / 100) * totalRaised;
+  const superPacDollar = itemizedSuperPacSum > 0 ? itemizedSuperPacSum : ((data?.super_pac_donations_pct || 0) / 100) * totalRaised;
+  const smallDollar = Math.max(0, totalRaised - pacDollar - superPacDollar);
+
+  const displayPacPct = totalRaised > 0 ? Math.round((pacDollar / totalRaised) * 1000) / 10 : (data?.pac_donations_pct || 0);
+  const displaySuperPacPct = totalRaised > 0 ? Math.round((superPacDollar / totalRaised) * 1000) / 10 : (data?.super_pac_donations_pct || 0);
+  const displaySmallPct = totalRaised > 0 ? Math.round(Math.max(0, 100 - displayPacPct - displaySuperPacPct) * 10) / 10 : (data?.small_donations_pct || 0);
+
+  // Unified display values switching automatically based on isCompleteCareerMode
+  const activeTotalRaised = isCompleteCareerMode ? careerStats.totalRaised : totalRaised;
+  const activeSmallDollar = isCompleteCareerMode ? careerStats.smallTotal : smallDollar;
+  const activePacDollar = isCompleteCareerMode ? careerStats.pacTotal : pacDollar;
+  const activeSuperPacDollar = isCompleteCareerMode ? careerStats.superPacTotal : superPacDollar;
+
+  const activeSmallPct = isCompleteCareerMode ? careerStats.smallPct : displaySmallPct;
+  const activePacPct = isCompleteCareerMode ? careerStats.pacPct : displayPacPct;
+  const activeSuperPacPct = isCompleteCareerMode ? careerStats.superPacPct : displaySuperPacPct;
 
   // Helper to determine the chamber served for a given cycle year
   const getChamberForCycle = useMemo(() => {
@@ -388,7 +531,7 @@ export default function FinanceChart({
 
   // 1. Render Donut / Circle Percentage Graph with Interactive Tooltip
   useEffect(() => {
-    if (!donutSvgRef.current || !data) return;
+    if (!donutSvgRef.current || (!data && !isCompleteCareerMode)) return;
 
     d3.select(donutSvgRef.current).selectAll("*").remove();
 
@@ -405,28 +548,32 @@ export default function FinanceChart({
       .append("g")
       .attr("transform", `translate(${width / 2}, ${height / 2})`);
 
-    const total = data.total_donations || 1;
-    const smallPct = data.small_donations_pct || 0;
-    const pacPct = data.pac_donations_pct || 0;
-    const superPacPct = data.super_pac_donations_pct || 0;
+    const total = activeTotalRaised || 1;
+    const smallAmt = activeSmallDollar;
+    const pacAmt = activePacDollar;
+    const superPacAmt = activeSuperPacDollar;
+
+    const smallPct = activeSmallPct;
+    const pacPct = activePacPct;
+    const superPacPct = activeSuperPacPct;
 
     const donutData = [
       {
         name: "Individual & Small (<$200)",
         percentage: smallPct,
-        amount: (smallPct / 100) * total,
+        amount: smallAmt,
         color: "#3b82f6",
       },
       {
         name: "Traditional PAC Direct",
         percentage: pacPct,
-        amount: (pacPct / 100) * total,
+        amount: pacAmt,
         color: "#10b981",
       },
       {
         name: "Super PAC & Outside Funds",
         percentage: superPacPct,
-        amount: (superPacPct / 100) * total,
+        amount: superPacAmt,
         color: "#f59e0b",
       },
     ].filter((d) => d.percentage > 0 || d.amount > 0);
@@ -481,9 +628,9 @@ export default function FinanceChart({
           setTooltip({
             x: event.clientX - bounds.left,
             y: event.clientY - bounds.top,
-            title: activeKey,
-            badge: data.office ? `U.S. ${data.office}` : undefined,
-            badgeColor: data.office?.toLowerCase() === "house" ? "#60a5fa" : "#c084fc",
+            title: isCompleteCareerMode ? "Complete Career Lifetime" : activeKey,
+            badge: isCompleteCareerMode ? "Career Lifetime" : (data?.office ? `U.S. ${data.office}` : undefined),
+            badgeColor: isCompleteCareerMode ? "#10b981" : (data?.office?.toLowerCase() === "house" ? "#60a5fa" : "#c084fc"),
             category: d.data.name,
             amount: d.data.amount,
             percentage: d.data.percentage,
@@ -515,7 +662,18 @@ export default function FinanceChart({
 
         setTooltip(null);
       });
-  }, [data, activeKey]);
+  }, [
+    data,
+    activeKey,
+    isCompleteCareerMode,
+    activeTotalRaised,
+    activeSmallDollar,
+    activePacDollar,
+    activeSuperPacDollar,
+    activeSmallPct,
+    activePacPct,
+    activeSuperPacPct,
+  ]);
 
   // 2. Render Stacked Multi-Cycle Bar Chart with Interactive Zoom & Pan + Dynamic Y-Scale Rescaling
   useEffect(() => {
@@ -1013,29 +1171,20 @@ export default function FinanceChart({
     );
   }
 
-  const topDonors: TopDonorItem[] = (data.top_donors && data.top_donors.length > 0)
+
+
+  const topDonors: TopDonorItem[] = (data?.top_donors && data.top_donors.length > 0)
     ? data.top_donors
-    : (data.donors || []).map((d) => ({
+    : ((data?.donors || []).map((d) => ({
         name: d.name,
         total_amount: d.amount,
         individual_amount: Math.round(d.amount * 0.6),
         pac_amount: Math.round(d.amount * 0.4),
-      }));
+      })));
 
   const displayDonors = isDonorsExpanded ? topDonors : topDonors.slice(0, 5);
 
-  const pacs = data.pacs || [];
-  const superPacs = data.super_pacs || [];
-  const allPacItems = [...pacs, ...superPacs].sort((a, b) => b.amount - a.amount);
-  const displayPacItems =
-    pacTab === "all" ? allPacItems : pacTab === "pacs" ? pacs : superPacs;
-  const maxPacAmount = Math.max(...allPacItems.map((i) => i.amount), 1);
 
-  // Derived dollar values for current active campaign
-  const totalRaised = data.total_donations || 0;
-  const smallDollar = ((data.small_donations_pct || 0) / 100) * totalRaised;
-  const pacDollar = ((data.pac_donations_pct || 0) / 100) * totalRaised;
-  const superPacDollar = ((data.super_pac_donations_pct || 0) / 100) * totalRaised;
 
   return (
     <div ref={chartWrapperRef} className={styles.chartWrapper}>
@@ -1186,8 +1335,8 @@ export default function FinanceChart({
           </div>
         )}
 
-        {/* Election Cycle Selector */}
-        {visibleKeys.length > 1 && (
+        {/* Election Cycle Selector (Shown only when focusing on a specific chamber/campaign, hidden in Complete Career History) */}
+        {!isCompleteCareerMode && visibleKeys.length > 1 && (
           <div className={styles.cycleSelectorWrapper}>
             <div className={styles.primaryCycleList}>
               {primaryKeys.map((k) => (
@@ -1231,7 +1380,7 @@ export default function FinanceChart({
                     <button
                       key={k}
                       type="button"
-                      className={`${styles.cycleBtn} ${styles.historicalBtn} ${k === activeKey ? styles.active : ""}`}
+                      className={`${styles.cycleBtn} ${styles.historicalBtn} ${k === activeKey && selectedCampaignKey !== "all_career" ? styles.active : ""}`}
                       onClick={() => handleCampaignChange(k)}
                     >
                       {k}
@@ -1244,13 +1393,15 @@ export default function FinanceChart({
         )}
       </div>
 
-      {/* 1. Circle / Donut Percentage Graph of Current Election Cycle */}
+      {/* 1. Circle / Donut Percentage Graph (Cycle or Complete Career Lifetime) */}
       <div className={styles.overviewGrid}>
         <div className={styles.donutContainer}>
           <svg ref={donutSvgRef} className={styles.donutSvg} />
           <div className={styles.donutCenter}>
-            <span className={styles.centerTotal}>{formatCurrency(totalRaised)}</span>
-            <span className={styles.centerLabel}>Total Raised</span>
+            <span className={styles.centerTotal}>{formatCurrency(activeTotalRaised)}</span>
+            <span className={styles.centerLabel}>
+              {isCompleteCareerMode ? "Career Lifetime Total" : "Total Raised"}
+            </span>
           </div>
         </div>
 
@@ -1261,13 +1412,17 @@ export default function FinanceChart({
               <span className={styles.metricDot} style={{ backgroundColor: "#3b82f6" }} />
               <div>
                 <span className={styles.metricName}>Individual & Grassroots</span>
-                <span className={styles.metricSub}>Direct citizens & unitemized (&lt;$200)</span>
+                <span className={styles.metricSub}>
+                  {isCompleteCareerMode
+                    ? "Lifetime direct citizens & grassroots (<$200)"
+                    : "Direct citizens & unitemized (<$200)"}
+                </span>
               </div>
             </div>
             <div className={styles.metricRight}>
-              <span className={styles.metricValue}>{formatCurrency(smallDollar)}</span>
+              <span className={styles.metricValue}>{formatCurrency(activeSmallDollar)}</span>
               <span className={styles.metricPct} style={{ backgroundColor: "rgba(59, 130, 246, 0.15)", color: "#60a5fa" }}>
-                {data.small_donations_pct}%
+                {activeSmallPct}%
               </span>
             </div>
           </div>
@@ -1278,13 +1433,17 @@ export default function FinanceChart({
               <span className={styles.metricDot} style={{ backgroundColor: "#10b981" }} />
               <div>
                 <span className={styles.metricName}>Traditional PAC Direct</span>
-                <span className={styles.metricSub}>Corporate, labor & committee PACs</span>
+                <span className={styles.metricSub}>
+                  {isCompleteCareerMode
+                    ? "Lifetime corporate, labor & committee PACs"
+                    : "Corporate, labor & committee PACs"}
+                </span>
               </div>
             </div>
             <div className={styles.metricRight}>
-              <span className={styles.metricValue}>{formatCurrency(pacDollar)}</span>
+              <span className={styles.metricValue}>{formatCurrency(activePacDollar)}</span>
               <span className={styles.metricPct} style={{ backgroundColor: "rgba(16, 185, 129, 0.15)", color: "#34d399" }}>
-                {data.pac_donations_pct}%
+                {activePacPct}%
               </span>
             </div>
           </div>
@@ -1295,24 +1454,43 @@ export default function FinanceChart({
               <span className={styles.metricDot} style={{ backgroundColor: "#f59e0b" }} />
               <div>
                 <span className={styles.metricName}>Super PAC & Outside Funds</span>
-                <span className={styles.metricSub}>Independent expenditures & action funds</span>
+                <span className={styles.metricSub}>
+                  {isCompleteCareerMode
+                    ? "Lifetime independent expenditures & action funds"
+                    : "Independent expenditures & action funds"}
+                </span>
               </div>
             </div>
             <div className={styles.metricRight}>
-              <span className={styles.metricValue}>{formatCurrency(superPacDollar)}</span>
+              <span className={styles.metricValue}>{formatCurrency(activeSuperPacDollar)}</span>
               <span className={styles.metricPct} style={{ backgroundColor: "rgba(245, 158, 11, 0.15)", color: "#fbbf24" }}>
-                {data.super_pac_donations_pct}%
+                {activeSuperPacPct}%
               </span>
             </div>
           </div>
         </div>
       </div>
 
-      {/* 2. Synchronized Itemized PAC & Super PAC Breakdown for Active Cycle */}
-      {(pacs.length > 0 || superPacs.length > 0) && (
+      {/* 2. Synchronized Itemized PAC & Outside Spending Breakdown for Active View */}
+      {(activePacs.length > 0 || activeSuperPacs.length > 0) && (
         <div className={styles.pacSection}>
           <div className={styles.pacHeader}>
-            <h4>Itemized PAC & Super PAC Contributions ({activeKey})</h4>
+            <div className={styles.pacHeaderLeft}>
+              <h4>
+                {isCompleteCareerMode
+                  ? "Itemized Career Lifetime PAC & Outside Spending Contributions (Complete Career)"
+                  : `Itemized PAC & Outside Spending Contributions (${activeKey})`}
+              </h4>
+              {currentTabPacItems.length > 10 && (
+                <button
+                  type="button"
+                  className={styles.expandBtn}
+                  onClick={() => setIsPacsExpanded(!isPacsExpanded)}
+                >
+                  {isPacsExpanded ? "Show Top 10" : `View All ${currentTabPacItems.length}`}
+                </button>
+              )}
+            </div>
             <div className={styles.pacTabs}>
               <button
                 type="button"
@@ -1333,37 +1511,76 @@ export default function FinanceChart({
                 className={`${styles.pacTabBtn} ${pacTab === "superPacs" ? styles.active : ""}`}
                 onClick={() => setPacTab("superPacs")}
               >
-                Super PACs ({superPacs.length})
+                Super PACs & Outside Funds ({superPacs.length})
               </button>
             </div>
           </div>
 
           {displayPacItems.length > 0 ? (
-            <div className={styles.pacList}>
-              {displayPacItems.map((item: PacItem, idx: number) => {
-                const isSuper = (item.type || "").toLowerCase().includes("super");
-                const fillPct = Math.min(100, Math.max(6, (item.amount / maxPacAmount) * 100));
+            <>
+              <div className={styles.pacList}>
+                {displayPacItems.map((item: PacItem, idx: number) => {
+                  const isOutside = isSuperOrOutside(item);
+                  const fillPct = Math.min(100, Math.max(6, (item.amount / maxPacAmount) * 100));
+                  const is501c = (item.type || "").toLowerCase().includes("501(c)");
+                  const filingSource = isOutside
+                    ? is501c
+                      ? "501(c)(4) Independent Expenditure / Outside Advocacy Group"
+                      : "FEC Schedule E / Super PAC Independent Expenditure Filing"
+                    : "Direct FEC Schedule A Filing (Campaign Committee)";
 
-                return (
-                  <div key={idx} className={styles.pacItem}>
-                    <div className={styles.pacTop}>
-                      <span className={styles.pacName}>{item.name}</span>
-                      <span className={styles.pacAmount}>{formatCurrency(item.amount)}</span>
+                  return (
+                    <div
+                      key={idx}
+                      className={`${styles.pacItem} ${isOutside ? styles.superPacItem : ""}`}
+                    >
+                      <div className={styles.pacTop}>
+                        <div className={styles.pacNameGroup}>
+                          <span className={styles.pacName}>{item.name}</span>
+                          {isOutside && (
+                            <span className={styles.superBadge}>
+                              {is501c ? "501(c)(4) Outside" : "Super PAC"}
+                            </span>
+                          )}
+                        </div>
+                        <span
+                          className={`${styles.pacAmount} ${isOutside ? styles.superPacAmount : ""}`}
+                        >
+                          {formatCurrency(item.amount)}
+                        </span>
+                      </div>
+                      <div className={styles.progressBarBg}>
+                        <div
+                          className={`${styles.progressBarFill} ${isOutside ? styles.superFill : ""}`}
+                          style={{ width: `${fillPct}%` }}
+                        />
+                      </div>
+                      <div className={styles.pacMeta}>
+                        <span>Type: {item.type}</span>
+                        <span>{filingSource}</span>
+                      </div>
                     </div>
-                    <div className={styles.progressBarBg}>
-                      <div
-                        className={`${styles.progressBarFill} ${isSuper ? styles.superFill : ""}`}
-                        style={{ width: `${fillPct}%` }}
-                      />
-                    </div>
-                    <div className={styles.pacMeta}>
-                      <span>Type: {item.type}</span>
-                      <span>Direct FEC Schedule A Filing</span>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
+                  );
+                })}
+              </div>
+
+              {currentTabPacItems.length > 10 && (
+                <div className={styles.pacFooterExpand}>
+                  <button
+                    type="button"
+                    className={styles.pacExpandBottomBtn}
+                    onClick={() => setIsPacsExpanded(!isPacsExpanded)}
+                  >
+                    <HugeiconsIcon icon={isPacsExpanded ? ChevronUpIcon : ChevronDownIcon} size={15} />
+                    <span>
+                      {isPacsExpanded
+                        ? `Collapse to Top 10 Listings`
+                        : `Expand and View All ${currentTabPacItems.length} Listings`}
+                    </span>
+                  </button>
+                </div>
+              )}
+            </>
           ) : (
             <p style={{ color: "var(--foreground-muted)", fontSize: "0.85rem", padding: "1rem" }}>
               No itemized records found for this category.
