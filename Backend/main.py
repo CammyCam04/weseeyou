@@ -52,4 +52,8 @@ app.include_router(judges_router)
 @app.get("/")
 def read_root():
     return {"message": "Welcome to the political tracker API!"}
+
+@app.get("/health")
+def health_check():
+    return {"status": "healthy", "service": "weseeyou-backend"}
 # endregion
