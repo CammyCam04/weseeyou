@@ -94,7 +94,18 @@ module "frontend" {
 }
 
 # -----------------------------------------------------------------------------
-# 7. CloudFront Global CDN Module (S3 OAC + ALB Backend Routing)
+# 7. Route 53 DNS Zone & ACM SSL Certificate Module
+# -----------------------------------------------------------------------------
+module "route53" {
+  source = "./modules/route53"
+
+  project_name = var.project_name
+  environment  = var.environment
+  domain_name  = var.domain_name
+}
+
+# -----------------------------------------------------------------------------
+# 8. CloudFront Global CDN Module (S3 OAC + ALB Backend Routing)
 # -----------------------------------------------------------------------------
 module "cloudfront" {
   source = "./modules/cloudfront"
@@ -106,6 +117,62 @@ module "cloudfront" {
   s3_bucket_regional_domain_name = module.frontend.bucket_regional_domain_name
   alb_dns_name                   = module.alb.alb_dns_name
   domain_name                    = var.domain_name
+  acm_certificate_arn            = module.route53.acm_certificate_arn
+}
+
+# -----------------------------------------------------------------------------
+# 9. Route 53 CloudFront Apex & Subdomain Alias Records
+# -----------------------------------------------------------------------------
+resource "aws_route53_record" "apex_ipv4" {
+  count   = var.domain_name != "" ? 1 : 0
+  zone_id = module.route53.zone_id
+  name    = var.domain_name
+  type    = "A"
+
+  alias {
+    name                   = module.cloudfront.distribution_domain_name
+    zone_id                = module.cloudfront.distribution_hosted_zone_id
+    evaluate_target_health = false
+  }
+}
+
+resource "aws_route53_record" "apex_ipv6" {
+  count   = var.domain_name != "" ? 1 : 0
+  zone_id = module.route53.zone_id
+  name    = var.domain_name
+  type    = "AAAA"
+
+  alias {
+    name                   = module.cloudfront.distribution_domain_name
+    zone_id                = module.cloudfront.distribution_hosted_zone_id
+    evaluate_target_health = false
+  }
+}
+
+resource "aws_route53_record" "www_ipv4" {
+  count   = var.domain_name != "" ? 1 : 0
+  zone_id = module.route53.zone_id
+  name    = "www.${var.domain_name}"
+  type    = "A"
+
+  alias {
+    name                   = module.cloudfront.distribution_domain_name
+    zone_id                = module.cloudfront.distribution_hosted_zone_id
+    evaluate_target_health = false
+  }
+}
+
+resource "aws_route53_record" "www_ipv6" {
+  count   = var.domain_name != "" ? 1 : 0
+  zone_id = module.route53.zone_id
+  name    = "www.${var.domain_name}"
+  type    = "AAAA"
+
+  alias {
+    name                   = module.cloudfront.distribution_domain_name
+    zone_id                = module.cloudfront.distribution_hosted_zone_id
+    evaluate_target_health = false
+  }
 }
 
 # -----------------------------------------------------------------------------

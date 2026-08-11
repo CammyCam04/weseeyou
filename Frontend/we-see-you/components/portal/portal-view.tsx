@@ -12,6 +12,7 @@ import { ProfileTemplate } from "../templates";
 import { fetchPoliticianById, fetchPoliticianFinance, PoliticianDetail, FinanceSummary } from "@/lib/api";
 
 export default function PortalView() {
+  const [mounted, setMounted] = useState<boolean>(false);
   const [activeTab, setActiveTab] = useState<string>("national");
   const [selectedPoliticianId, setSelectedPoliticianId] = useState<string | null>(null);
 
@@ -20,6 +21,10 @@ export default function PortalView() {
   const [financeData, setFinanceData] = useState<Record<string, FinanceSummary> | null>(null);
   const [profileLoading, setProfileLoading] = useState<boolean>(false);
   const [profileError, setProfileError] = useState<string | null>(null);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   // Parse URL search params on client mount for deep linking (?tab=... or ?id=...)
   useEffect(() => {
@@ -91,6 +96,19 @@ export default function PortalView() {
       window.history.pushState({}, "", url.toString());
     }
   };
+
+  if (!mounted) {
+    return (
+      <div className={styles.portalWrapper}>
+        <Header activeTab={activeTab} onTabChange={handleTabChange} />
+        <main className={styles.mainContent}>
+          <div style={{ padding: "4rem 2rem", textAlign: "center", color: "var(--foreground-secondary)" }}>
+            Loading civic transparency portal...
+          </div>
+        </main>
+      </div>
+    );
+  }
 
   return (
     <div className={styles.portalWrapper}>

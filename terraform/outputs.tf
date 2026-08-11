@@ -100,3 +100,21 @@ output "cloudwatch_dashboard_name" {
   description = "Name of the operational CloudWatch dashboard."
   value       = module.monitoring.dashboard_name
 }
+
+# -----------------------------------------------------------------------------
+# Route 53 & Custom Domain Outputs
+# -----------------------------------------------------------------------------
+output "route53_zone_id" {
+  description = "The ID of the Route 53 hosted zone."
+  value       = module.route53.zone_id
+}
+
+output "route53_name_servers" {
+  description = "Authoritative AWS Name Servers to paste into Porkbun (Custom Nameservers)."
+  value       = module.route53.name_servers
+}
+
+output "custom_domain_url" {
+  description = "Public custom HTTPS URL."
+  value       = var.domain_name != "" ? "https://${var.domain_name}" : ""
+}
