@@ -22,6 +22,7 @@ from services.news_service import fetch_politician_news
 from services.stock_trades_service import fetch_politician_stock_trades
 from services.census_service import fetch_district_demographics
 from services.policy_stance_service import fetch_candidate_accurate_stances
+from enums.enums import Party, Chamber
 # endregion
 
 # region Router Setup
@@ -157,6 +158,32 @@ def _get_cosponsored_legislation_list(bioguide_id: str, limit: int = 20) -> List
     return items
 
 
+def _normalize_party(raw_party: Optional[str]) -> Party:
+    if not raw_party:
+        return Party.INDEPENDENT
+    p = str(raw_party).strip().upper()
+    if p in ("D", "DEMOCRAT", "DEMOCRATIC"):
+        return Party.DEMOCRAT
+    if p in ("R", "REPUBLICAN"):
+        return Party.REPUBLICAN
+    return Party.INDEPENDENT
+
+
+def _normalize_chamber(raw_chamber: Optional[str]) -> Chamber:
+    if not raw_chamber:
+        return Chamber.HOUSE
+    c = str(raw_chamber).strip().capitalize()
+    if c == "Senate":
+        return Chamber.SENATE
+    if c == "House":
+        return Chamber.HOUSE
+    if c in ("Executive", "Cabinet"):
+        return Chamber.EXECUTIVE
+    if c in ("Judicial", "Supreme court", "Appellate"):
+        return Chamber.JUDICIAL
+    return Chamber.HOUSE
+
+
 # region Routes
 @router.get("", response_model=List[PoliticianSearchItem])
 async def search_politicians(
@@ -164,20 +191,25 @@ async def search_politicians(
     db: Optional[AsyncSession] = Depends(get_db)
 ):
     if is_database_configured() and db is not None:
-        records = await repo_list_officials(query=query, db=db)
-        return [
-            PoliticianSearchItem(
-                id=r["id"],
-                first_name=r["first_name"],
-                last_name=r["last_name"],
-                title=r["current_title"],
-                state=r["state"],
-                party=r["party"],
-                chamber=r.get("current_chamber", "House"),
-                profile_image_url=r.get("personal_profile", {}).get("profile_image_url")
-            )
-            for r in records
-        ]
+        try:
+            records = await repo_list_officials(query=query, db=db)
+            # Exclude judicial records from national politician search roster
+            legislative_records = [r for r in records if r.get("jurisdiction_branch") != "federal_judicial"]
+            return [
+                PoliticianSearchItem(
+                    id=r["id"],
+                    first_name=r["first_name"],
+                    last_name=r["last_name"],
+                    title=r["current_title"],
+                    state=r["state"],
+                    party=_normalize_party(r.get("party")),
+                    chamber=_normalize_chamber(r.get("current_chamber")),
+                    profile_image_url=r.get("personal_profile", {}).get("profile_image_url")
+                )
+                for r in legislative_records
+            ]
+        except Exception as e:
+            print(f"Database query error in search_politicians, falling back to memory: {e}")
 
     politicians = load_congress_data()
     if not query:
@@ -201,30 +233,35 @@ async def get_politician_by_id(
     db: Optional[AsyncSession] = Depends(get_db)
 ):
     if is_database_configured() and db is not None:
-        record = await repo_get_official(politician_id, db=db)
-        if record:
-            p_profile = record.get("personal_profile", {})
-            return PoliticianDetail(
-                id=record["id"],
-                first_name=record["first_name"],
-                last_name=record["last_name"],
-                title=record["current_title"],
-                state=record["state"],
-                party=record["party"],
-                chamber=record.get("current_chamber", "House"),
-                website_url=p_profile.get("website_url", "https://www.congress.gov"),
-                next_election=p_profile.get("next_election", "2026"),
-                profile_image_url=p_profile.get("profile_image_url"),
-                wikipedia_id=p_profile.get("wikipedia_id"),
-                bio_summary=record.get("personal_profile", {}).get("bio_summary"),
-                stances=p_profile.get("stances", []),
-                affiliations=p_profile.get("affiliations", []),
-                controversies=record.get("controversies_and_news", []),
-                fec_ids=record.get("external_identifiers", {}).get("fec_ids", []),
-                terms_history=record.get("political_history", []),
-                career_chambers=[record.get("current_chamber", "House")],
-                has_multi_chamber_history=len(record.get("political_history", [])) > 1
-            )
+        try:
+            record = await repo_get_official(politician_id, db=db)
+            if record:
+                p_profile = record.get("personal_profile", {})
+                norm_party = _normalize_party(record.get("party"))
+                norm_chamber = _normalize_chamber(record.get("current_chamber"))
+                return PoliticianDetail(
+                    id=record["id"],
+                    first_name=record["first_name"],
+                    last_name=record["last_name"],
+                    title=record["current_title"],
+                    state=record["state"],
+                    party=norm_party,
+                    chamber=norm_chamber,
+                    website_url=p_profile.get("website_url", "https://www.congress.gov"),
+                    next_election=p_profile.get("next_election", "2026"),
+                    profile_image_url=p_profile.get("profile_image_url"),
+                    wikipedia_id=p_profile.get("wikipedia_id"),
+                    bio_summary=record.get("personal_profile", {}).get("bio_summary"),
+                    stances=p_profile.get("stances", []),
+                    affiliations=p_profile.get("affiliations", []),
+                    controversies=record.get("controversies_and_news", []),
+                    fec_ids=record.get("external_identifiers", {}).get("fec_ids", []),
+                    terms_history=record.get("political_history", []),
+                    career_chambers=[norm_chamber.value],
+                    has_multi_chamber_history=len(record.get("political_history", [])) > 1
+                )
+        except Exception as e:
+            print(f"Database query error in get_politician_by_id, falling back to memory: {e}")
 
     politician = next((p for p in load_congress_data() if p.id.lower() == politician_id.lower()), None)
     if not politician:
@@ -294,11 +331,14 @@ async def get_politician_finance(
     db: Optional[AsyncSession] = Depends(get_db)
 ):
     if is_database_configured() and db is not None:
-        record = await repo_get_official(politician_id, db=db)
-        if record:
-            fin_hist = record.get("financial_history", {})
-            if fin_hist:
-                return {k: FinanceSummary(**v) for k, v in fin_hist.items()}
+        try:
+            record = await repo_get_official(politician_id, db=db)
+            if record:
+                fin_hist = record.get("financial_history", {})
+                if fin_hist:
+                    return {k: FinanceSummary(**v) for k, v in fin_hist.items()}
+        except Exception as e:
+            print(f"Database query error in get_politician_finance, falling back to memory: {e}")
 
     if not any(p.id.lower() == politician_id.lower() for p in load_congress_data()):
         raise HTTPException(status_code=404, detail="Politician not found")
