@@ -200,6 +200,15 @@ npm run dev
 
 _The Next.js frontend will run at `http://localhost:3000`._
 
+### 4. Infrastructure (Terraform) Setup
+
+```bash
+cd terraform
+cp terraform.tfvars.example terraform.tfvars
+terraform init
+terraform plan
+```
+
 ---
 
 ## 🧪 Automated Testing & CI/CD

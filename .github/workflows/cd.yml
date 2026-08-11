@@ -1,0 +1,106 @@
+name: CD Deployment Pipeline
+
+on:
+  workflow_dispatch:
+    inputs:
+      target_environment:
+        description: "Target AWS Environment"
+        required: true
+        default: "prod"
+        type: choice
+        options:
+          - prod
+          - dev
+      deploy_scope:
+        description: "Deployment Scope"
+        required: true
+        default: "all"
+        type: choice
+        options:
+          - all
+          - frontend-only
+          - backend-only
+
+concurrency:
+  group: cd-deploy-${{ github.ref }}-${{ inputs.target_environment }}
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    name: Deploy to AWS (${{ inputs.target_environment }})
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ secrets.AWS_REGION || 'us-east-1' }}
+          role-to-assume: ${{ inputs.target_environment == 'dev' && secrets.AWS_DEV_ROLE_TO_ASSUME || secrets.AWS_ROLE_TO_ASSUME }}
+          role-duration-seconds: 1800
+
+      # -------------------------------------------------------------
+      # 1. FRONTEND DEPLOYMENT (S3 Static Hosting + CloudFront Invalidation)
+      # -------------------------------------------------------------
+      - name: Setup Node.js for Frontend Build
+        if: inputs.deploy_scope == 'all' || inputs.deploy_scope == 'frontend-only'
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: Frontend/we-see-you/package-lock.json
+
+      - name: Build Next.js Static Export
+        if: inputs.deploy_scope == 'all' || inputs.deploy_scope == 'frontend-only'
+        working-directory: Frontend/we-see-you
+        run: |
+          npm ci
+          npm run build
+        env:
+          NEXT_TELEMETRY_DISABLED: 1
+
+      - name: Deploy Frontend to S3
+        if: (inputs.deploy_scope == 'all' || inputs.deploy_scope == 'frontend-only') && env.FRONTEND_BUCKET != ''
+        env:
+          FRONTEND_BUCKET: ${{ secrets.AWS_S3_FRONTEND_BUCKET }}
+        run: |
+          aws s3 sync Frontend/we-see-you/out s3://${{ secrets.AWS_S3_FRONTEND_BUCKET }} --delete
+
+      - name: Invalidate CloudFront Cache
+        if: (inputs.deploy_scope == 'all' || inputs.deploy_scope == 'frontend-only') && env.CLOUDFRONT_DIST_ID != ''
+        env:
+          CLOUDFRONT_DIST_ID: ${{ secrets.AWS_CLOUDFRONT_DISTRIBUTION_ID }}
+        run: |
+          aws cloudfront create-invalidation --distribution-id ${{ secrets.AWS_CLOUDFRONT_DISTRIBUTION_ID }} --paths "/*"
+
+      # -------------------------------------------------------------
+      # 2. BACKEND DEPLOYMENT (Amazon ECR + ECS Fargate Rolling Restart)
+      # -------------------------------------------------------------
+      - name: Log in to Amazon ECR
+        if: inputs.deploy_scope == 'all' || inputs.deploy_scope == 'backend-only'
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Build, Tag, and Push Backend Docker Image
+        if: (inputs.deploy_scope == 'all' || inputs.deploy_scope == 'backend-only') && env.ECR_REGISTRY != ''
+        env:
+          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          ECR_REPOSITORY: ${{ secrets.AWS_ECR_REPOSITORY || 'weseeyou-backend' }}
+          IMAGE_TAG: ${{ github.sha }}
+        working-directory: Backend
+        run: |
+          docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG -t $ECR_REGISTRY/$ECR_REPOSITORY:latest .
+          docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
+          docker push $ECR_REGISTRY/$ECR_REPOSITORY:latest
+
+      - name: Deploy to Amazon ECS Fargate
+        if: (inputs.deploy_scope == 'all' || inputs.deploy_scope == 'backend-only') && env.ECS_CLUSTER != ''
+        env:
+          ECS_CLUSTER: ${{ secrets.AWS_ECS_CLUSTER || 'weseeyou-prod-cluster' }}
+          ECS_SERVICE: ${{ secrets.AWS_ECS_SERVICE || 'weseeyou-prod-backend-service' }}
+        run: |
+          aws ecs update-service --cluster $ECS_CLUSTER --service $ECS_SERVICE --force-new-deployment
