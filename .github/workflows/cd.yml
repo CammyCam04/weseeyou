@@ -28,6 +28,7 @@ concurrency:
 jobs:
   deploy:
     name: Deploy to AWS (${{ inputs.target_environment }})
+    environment: ${{ inputs.target_environment }}
     runs-on: ubuntu-latest
 
     steps:
@@ -44,7 +45,7 @@ jobs:
           role-duration-seconds: 1800
 
       # -------------------------------------------------------------
-      # 1. FRONTEND DEPLOYMENT (S3 Static Hosting + CloudFront Invalidation)
+      # 1. FRONTEND DEPLOYMENT (Dynamic S3 & CloudFront Discovery)
       # -------------------------------------------------------------
       - name: Setup Node.js for Frontend Build
         if: inputs.deploy_scope == 'all' || inputs.deploy_scope == 'frontend-only'
@@ -63,19 +64,35 @@ jobs:
         env:
           NEXT_TELEMETRY_DISABLED: 1
 
-      - name: Deploy Frontend to S3
-        if: (inputs.deploy_scope == 'all' || inputs.deploy_scope == 'frontend-only') && env.FRONTEND_BUCKET != ''
-        env:
-          FRONTEND_BUCKET: ${{ secrets.AWS_S3_FRONTEND_BUCKET }}
+      - name: Discover Active AWS Resources & Deploy Frontend
+        if: inputs.deploy_scope == 'all' || inputs.deploy_scope == 'frontend-only'
         run: |
-          aws s3 sync Frontend/we-see-you/out s3://${{ secrets.AWS_S3_FRONTEND_BUCKET }} --delete
+          ENV_NAME="${{ inputs.target_environment }}"
+          echo "Discovering active S3 bucket for environment: $ENV_NAME..."
+          
+          # Dynamically locate the S3 frontend bucket matching project prefix
+          S3_BUCKET=$(aws s3api list-buckets --query "Buckets[?starts_with(Name, 'weseeyou-${ENV_NAME}-frontend')].Name" --output text | awk '{print $1}')
+          
+          if [ -z "$S3_BUCKET" ] || [ "$S3_BUCKET" == "None" ]; then
+            echo "Error: Could not find active S3 frontend bucket for weseeyou-${ENV_NAME}!"
+            exit 1
+          fi
+          
+          echo "Found S3 Bucket: $S3_BUCKET"
+          echo "Syncing Next.js static build to s3://$S3_BUCKET..."
+          aws s3 sync Frontend/we-see-you/out s3://$S3_BUCKET --delete
 
-      - name: Invalidate CloudFront Cache
-        if: (inputs.deploy_scope == 'all' || inputs.deploy_scope == 'frontend-only') && env.CLOUDFRONT_DIST_ID != ''
-        env:
-          CLOUDFRONT_DIST_ID: ${{ secrets.AWS_CLOUDFRONT_DISTRIBUTION_ID }}
-        run: |
-          aws cloudfront create-invalidation --distribution-id ${{ secrets.AWS_CLOUDFRONT_DISTRIBUTION_ID }} --paths "/*"
+          # Dynamically locate active CloudFront Distribution ID
+          echo "Discovering active CloudFront Distribution ID..."
+          CF_DIST_ID=$(aws cloudfront list-distributions --query "DistributionList.Items[?contains(Comment, 'weseeyou-${ENV_NAME}')].Id" --output text | awk '{print $1}')
+          
+          if [ -n "$CF_DIST_ID" ] && [ "$CF_DIST_ID" != "None" ]; then
+            echo "Found CloudFront Distribution: $CF_DIST_ID"
+            echo "Invalidating CloudFront cache across all edge locations..."
+            aws cloudfront create-invalidation --distribution-id $CF_DIST_ID --paths "/*"
+          else
+            echo "Warning: No CloudFront distribution found matching weseeyou-${ENV_NAME}. Skipping invalidation."
+          fi
 
       # -------------------------------------------------------------
       # 2. BACKEND DEPLOYMENT (Amazon ECR + ECS Fargate Rolling Restart)
@@ -98,9 +115,11 @@ jobs:
           docker push $ECR_REGISTRY/$ECR_REPOSITORY:latest
 
       - name: Deploy to Amazon ECS Fargate
-        if: (inputs.deploy_scope == 'all' || inputs.deploy_scope == 'backend-only') && env.ECS_CLUSTER != ''
-        env:
-          ECS_CLUSTER: ${{ secrets.AWS_ECS_CLUSTER || 'weseeyou-prod-cluster' }}
-          ECS_SERVICE: ${{ secrets.AWS_ECS_SERVICE || 'weseeyou-prod-backend-service' }}
+        if: inputs.deploy_scope == 'all' || inputs.deploy_scope == 'backend-only'
         run: |
-          aws ecs update-service --cluster $ECS_CLUSTER --service $ECS_SERVICE --force-new-deployment
+          ENV_NAME="${{ inputs.target_environment }}"
+          CLUSTER_NAME="weseeyou-${ENV_NAME}-cluster"
+          SERVICE_NAME="weseeyou-${ENV_NAME}-backend-service"
+          
+          echo "Triggering rolling deployment on ECS Cluster: $CLUSTER_NAME (Service: $SERVICE_NAME)..."
+          aws ecs update-service --cluster $CLUSTER_NAME --service $SERVICE_NAME --force-new-deployment

@@ -43,15 +43,16 @@ module "security" {
 module "rds" {
   source = "./modules/rds"
 
-  project_name          = var.project_name
-  environment           = var.environment
-  db_name               = var.db_name
-  db_username           = var.db_username
-  db_instance_class     = var.db_instance_class
-  db_allocated_storage  = var.db_allocated_storage
-  multi_az              = var.multi_az
-  db_subnet_group_name  = module.vpc.db_subnet_group_name
-  rds_security_group_id = module.security.rds_security_group_id
+  project_name            = var.project_name
+  environment             = var.environment
+  db_name                 = var.db_name
+  db_username             = var.db_username
+  db_instance_class       = var.db_instance_class
+  db_allocated_storage    = var.db_allocated_storage
+  multi_az                = var.multi_az
+  backup_retention_period = var.backup_retention_period
+  db_subnet_group_name    = module.vpc.db_subnet_group_name
+  rds_security_group_id   = module.security.rds_security_group_id
 }
 
 # -----------------------------------------------------------------------------
@@ -78,7 +79,7 @@ module "ecs" {
   private_app_subnet_ids = module.vpc.private_app_subnet_ids
   ecs_security_group_id  = module.security.ecs_security_group_id
   target_group_arn       = module.alb.target_group_arn
-  db_url_ssm_arn         = module.rds.db_url_ssm_name
+  db_url_ssm_arn         = module.rds.db_url_ssm_arn
   desired_count          = 1
 }
 
@@ -117,7 +118,7 @@ module "lambda_etl" {
   environment              = var.environment
   private_app_subnet_ids   = module.vpc.private_app_subnet_ids
   lambda_security_group_id = module.security.lambda_security_group_id
-  db_url_ssm_arn           = module.rds.db_url_ssm_name
+  db_url_ssm_arn           = module.rds.db_url_ssm_arn
 }
 
 # -----------------------------------------------------------------------------

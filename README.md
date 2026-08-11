@@ -53,9 +53,9 @@ Whether investigating a U.S. Senator's Super PAC backers, comparing election cyc
 ### 2. Campaign Finance & Outside Spending Engine
 
 - **Visual Percentage Donut Chart**: D3-powered interactive Donut graph breaking down funding into three distinct buckets:
-  - 🔵 **Individual & Grassroots**: Direct citizen donations (<$200) and unitemized grassroots contributions.
-  - 🟢 **Traditional PAC Direct**: Regulated corporate, labor union, and committee PAC contributions.
-  - 🟡 **Super PAC & Outside Funds**: Independent expenditure-only committees, 501(c)(4) social welfare action funds, and leadership funds.
+  - **Individual & Grassroots**: Direct citizen donations (<$200) and unitemized grassroots contributions.
+  - **Traditional PAC Direct**: Regulated corporate, labor union, and committee PAC contributions.
+  - **Super PAC & Outside Funds**: Independent expenditure-only committees, 501(c)(4) social welfare action funds, and leadership funds.
 - **Multi-Year Historical Fundraising**: Comparative multi-cycle bar charts showing financial growth and trends across prior election runs.
 - **Synchronized Itemized PAC Lists**: Filterable lists of corporate/labor PACs and Super PAC donors with exact dollar amounts, percentages, and outside spending classifications.
 - **Top-10 List Smart Expansion**: Clean 10-item initial display with instant expansion to view all verified donors.
@@ -90,16 +90,16 @@ All data displayed on **We See You** is aggregated directly from official, nonpa
 
 ```mermaid
 flowchart TD
-    User(["🌐 End User / Browser"]) --> DNS["Route 53 (DNS)"]
+    User(["End User / Browser"]) --> DNS["Route 53 (DNS)"]
     DNS --> CF["CloudFront Distribution (Edge CDN + SSL)"]
 
     subgraph AWS_Production ["AWS Production Cloud"]
         CF -->|"Static Frontend (/*)"| S3["S3 Bucket (Next.js Static Export + OAC)"]
         CF -->|"REST API (/api/*)"| ALB["Application Load Balancer (ALB)"]
 
-        subgraph VPC ["Multi-AZ VPC (10.0.0.0/16)"]
-            ALB -->|"Port 8000"| ECS["Amazon ECS Fargate (FastAPI Backend Containers)"]
-            ECS -->|"Port 5432"| RDS[("Amazon RDS PostgreSQL (db.t4g.micro)")]
+        subgraph VPC ["Multi-AZ Private VPC"]
+            ALB -->|"Private Service Traffic"| ECS["Amazon ECS Fargate (FastAPI Backend Containers)"]
+            ECS -->|"Async Database Queries"| RDS[("Amazon RDS PostgreSQL (db.t4g.micro)")]
 
             Lambda["AWS Lambda ETL Worker"] -->|"EventBridge Cron"| ExtAPIs["FEC & Congress APIs"]
             Lambda -->|"Upsert Filings"| RDS
@@ -142,17 +142,20 @@ flowchart TD
 - **Cloud Provider**: Amazon Web Services (AWS)
 - **Infrastructure as Code**: [Terraform 1.7+](https://www.terraform.io/)
 - **Compute**: Amazon ECS on AWS Fargate (Containerized Microservices)
-- **Database**: Amazon RDS PostgreSQL 16
+- **Database**: Amazon RDS PostgreSQL 16 (Declarative Partitioning + JSONB Documents + `pg_trgm` GIN Indexes)
+- **ORM & Migrations**: SQLAlchemy 2.0 (AsyncPG) + Alembic
 - **Serverless Ingestion**: AWS Lambda + Amazon EventBridge
 - **Delivery & CDN**: Amazon CloudFront + Amazon S3 (Origin Access Control)
-- **CI/CD**: GitHub Actions (Linting, TypeScript check, Vitest suite, Pytest suite, Terraform validation)
+- **CI/CD**: GitHub Actions (Linting, TypeScript check, Vitest suite, Pytest suite, Terraform validation, and Dynamic CD Pipeline)
 
 ---
 
-## Future Roadmap
+## Project Roadmap & Status
 
-- [ ] **AWS Production Terraform Rollout**: Complete modular provisioning of Multi-AZ VPC, ECS Fargate cluster, and RDS PostgreSQL instance.
-- [ ] **Automated Lambda ETL Workers**: Scheduled EventBridge workers automatically fetching and upserting quarterly FEC filing updates into RDS.
+- [x] **AWS Multi-Account Terraform Infrastructure**: Complete 9-module IaC provisioning Multi-AZ VPC, ECS Fargate cluster, RDS PostgreSQL instance, CloudFront CDN, and CloudWatch operations dashboard.
+- [x] **PostgreSQL Hybrid Schema & Partitioning**: Declarative list partitioning by `jurisdiction_branch`, 50-state local sub-partitions, GIN trigram indexes for instant autocomplete, and checksum-based conditional upserts.
+- [x] **Alembic Migrations & Database Seeder**: Automated schema migration suite and idempotent seeder populating all 535 voting Congress members, Executive Cabinet officers, Federal Judges, and PAC campaign finances.
+- [x] **Enterprise CI/CD Pipelines**: Automated GitHub Actions testing workflow (`ci.yml`) and manual gated deployment pipeline (`cd.yml`) with dynamic AWS resource discovery.
 - [ ] **Live Congressional Roll-Call Votes**: Real-time tracking of House and Senate bill votes with individual member voting history.
 - [ ] **State Campaign Finance Expansion**: Integrating state-level campaign finance registries (e.g. FollowTheMoney / OpenSecrets state data).
 - [ ] **Custom Citizen Watchlists**: Bookmarking politicians, tracking changes in top donor categories, and receiving alerts on major Super PAC expenditures.
@@ -211,7 +214,7 @@ terraform plan
 
 ---
 
-## 🧪 Automated Testing & CI/CD
+## Automated Testing & CI/CD
 
 Both frontend and backend include comprehensive unit test suites integrated into GitHub Actions CI:
 

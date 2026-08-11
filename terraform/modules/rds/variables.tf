@@ -47,3 +47,9 @@ variable "rds_security_group_id" {
   description = "Security group ID for RDS instance."
   type        = string
 }
+
+variable "backup_retention_period" {
+  description = "Days of automated backups to retain (AWS Free Tier limit is 1 day)."
+  type        = number
+  default     = 1
+}
