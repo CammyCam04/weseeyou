@@ -29,7 +29,13 @@ variable "alb_dns_name" {
 }
 
 variable "domain_name" {
-  description = "Optional custom domain name (e.g. weseeyou.org)."
+  description = "Optional custom domain name (e.g. weseeyou.app)."
+  type        = string
+  default     = ""
+}
+
+variable "acm_certificate_arn" {
+  description = "ARN of the validated ACM SSL certificate for custom domain."
   type        = string
   default     = ""
 }

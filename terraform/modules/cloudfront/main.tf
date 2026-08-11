@@ -19,6 +19,8 @@ resource "aws_cloudfront_distribution" "main" {
   default_root_object = "index.html"
   price_class         = "PriceClass_100" # Cost-optimized: US, Canada, Europe
 
+  aliases = var.domain_name != "" && var.acm_certificate_arn != "" ? [var.domain_name, "www.${var.domain_name}"] : []
+
   # 1. Frontend S3 Origin (Static Next.js Build)
   origin {
     domain_name              = var.s3_bucket_regional_domain_name
@@ -141,8 +143,20 @@ resource "aws_cloudfront_distribution" "main" {
     }
   }
 
-  viewer_certificate {
-    cloudfront_default_certificate = true
+  dynamic "viewer_certificate" {
+    for_each = var.domain_name != "" && var.acm_certificate_arn != "" ? [1] : []
+    content {
+      acm_certificate_arn      = var.acm_certificate_arn
+      ssl_support_method       = "sni-only"
+      minimum_protocol_version = "TLSv1.2_2021"
+    }
+  }
+
+  dynamic "viewer_certificate" {
+    for_each = var.domain_name == "" || var.acm_certificate_arn == "" ? [1] : []
+    content {
+      cloudfront_default_certificate = true
+    }
   }
 
   tags = {

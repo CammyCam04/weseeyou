@@ -155,6 +155,7 @@ flowchart TD
 - [ ] **Live Congressional Roll-Call Votes**: Real-time tracking of House and Senate bill votes with individual member voting history.
 - [ ] **State Campaign Finance Expansion**: Integrating state-level campaign finance registries (e.g. FollowTheMoney / OpenSecrets state data).
 - [ ] **Custom Citizen Watchlists**: Bookmarking politicians, tracking changes in top donor categories, and receiving alerts on major Super PAC expenditures.
+- [ ] **Mobile Display**: Configure the site to be mobile device compatible.
 - [ ] **More/TBD**
 
 ---
