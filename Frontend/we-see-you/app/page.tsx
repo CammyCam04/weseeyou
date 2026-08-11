@@ -1,10 +1,6 @@
 "use client";
 
-import dynamic from "next/dynamic";
-
-const PortalView = dynamic(() => import("@/components/portal/portal-view"), {
-  ssr: false,
-});
+import PortalView from "@/components/portal/portal-view";
 
 export default function Page() {
   return <PortalView />;
