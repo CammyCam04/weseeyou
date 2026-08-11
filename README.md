@@ -152,13 +152,10 @@ flowchart TD
 
 ## Project Roadmap & Status
 
-- [x] **AWS Multi-Account Terraform Infrastructure**: Complete 9-module IaC provisioning Multi-AZ VPC, ECS Fargate cluster, RDS PostgreSQL instance, CloudFront CDN, and CloudWatch operations dashboard.
-- [x] **PostgreSQL Hybrid Schema & Partitioning**: Declarative list partitioning by `jurisdiction_branch`, 50-state local sub-partitions, GIN trigram indexes for instant autocomplete, and checksum-based conditional upserts.
-- [x] **Alembic Migrations & Database Seeder**: Automated schema migration suite and idempotent seeder populating all 535 voting Congress members, Executive Cabinet officers, Federal Judges, and PAC campaign finances.
-- [x] **Enterprise CI/CD Pipelines**: Automated GitHub Actions testing workflow (`ci.yml`) and manual gated deployment pipeline (`cd.yml`) with dynamic AWS resource discovery.
 - [ ] **Live Congressional Roll-Call Votes**: Real-time tracking of House and Senate bill votes with individual member voting history.
 - [ ] **State Campaign Finance Expansion**: Integrating state-level campaign finance registries (e.g. FollowTheMoney / OpenSecrets state data).
 - [ ] **Custom Citizen Watchlists**: Bookmarking politicians, tracking changes in top donor categories, and receiving alerts on major Super PAC expenditures.
+- [ ] **More/TBD**
 
 ---
 
