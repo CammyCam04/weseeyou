@@ -125,18 +125,45 @@ export interface PoliticianDetail extends PoliticianSearchItem {
   has_multi_chamber_history?: boolean;
 }
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api";
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "/api";
+
+function buildApiUrl(path: string, params?: Record<string, string | undefined>): string {
+  const cleanPath = path.startsWith("/") ? path : `/${path}`;
+  const isAbsolute = API_BASE_URL.startsWith("http://") || API_BASE_URL.startsWith("https://");
+
+  if (isAbsolute) {
+    const url = new URL(`${API_BASE_URL.replace(/\/$/, "")}${cleanPath}`);
+    if (params) {
+      Object.entries(params).forEach(([key, val]) => {
+        if (val !== undefined && val !== "") {
+          url.searchParams.append(key, val);
+        }
+      });
+    }
+    return url.toString();
+  }
+
+  // Relative path (e.g. "/api/politicians")
+  const base = API_BASE_URL.replace(/\/$/, "");
+  const searchParams = new URLSearchParams();
+  if (params) {
+    Object.entries(params).forEach(([key, val]) => {
+      if (val !== undefined && val !== "") {
+        searchParams.append(key, val);
+      }
+    });
+  }
+  const queryString = searchParams.toString();
+  return `${base}${cleanPath}${queryString ? `?${queryString}` : ""}`;
+}
 
 /**
  * Fetch list of politicians matching a query string (or all if query is empty)
  */
 export async function fetchPoliticians(query?: string): Promise<PoliticianSearchItem[]> {
-  const url = new URL(`${API_BASE_URL}/politicians`);
-  if (query) {
-    url.searchParams.append("query", query);
-  }
+  const url = buildApiUrl("/politicians", query ? { query } : undefined);
 
-  const response = await fetch(url.toString(), {
+  const response = await fetch(url, {
     method: "GET",
     headers: {
       "Content-Type": "application/json",
@@ -155,7 +182,8 @@ export async function fetchPoliticians(query?: string): Promise<PoliticianSearch
  * Fetch detailed profile of a politician by ID
  */
 export async function fetchPoliticianById(id: string): Promise<PoliticianDetail> {
-  const response = await fetch(`${API_BASE_URL}/politicians/${id}`, {
+  const url = buildApiUrl(`/politicians/${encodeURIComponent(id)}`);
+  const response = await fetch(url, {
     method: "GET",
     headers: {
       "Content-Type": "application/json",
@@ -241,7 +269,8 @@ export interface FinanceSummary {
  * Fetch campaign finance summary and history for a politician by ID
  */
 export async function fetchPoliticianFinance(id: string): Promise<Record<string, FinanceSummary>> {
-  const response = await fetch(`${API_BASE_URL}/politicians/${id}/finance`, {
+  const url = buildApiUrl(`/politicians/${encodeURIComponent(id)}/finance`);
+  const response = await fetch(url, {
     method: "GET",
     headers: {
       "Content-Type": "application/json",
@@ -269,7 +298,8 @@ export interface PoliticianLegislationData {
  * Fetch all sponsored and voted legislation for a politician
  */
 export async function fetchPoliticianLegislation(id: string): Promise<PoliticianLegislationData> {
-  const response = await fetch(`${API_BASE_URL}/politicians/${id}/legislation`, {
+  const url = buildApiUrl(`/politicians/${encodeURIComponent(id)}/legislation`);
+  const response = await fetch(url, {
     method: "GET",
     headers: {
       "Content-Type": "application/json",
@@ -330,15 +360,9 @@ export interface CommitteeDetail extends CommitteeSearchItem {
  * Fetch list of committees with optional search query and chamber filter
  */
 export async function fetchCommittees(query?: string, chamber?: string): Promise<CommitteeSearchItem[]> {
-  const url = new URL(`${API_BASE_URL}/committees`);
-  if (query) {
-    url.searchParams.append("query", query);
-  }
-  if (chamber) {
-    url.searchParams.append("chamber", chamber);
-  }
+  const url = buildApiUrl("/committees", { query, chamber });
 
-  const response = await fetch(url.toString(), {
+  const response = await fetch(url, {
     method: "GET",
     headers: {
       "Content-Type": "application/json",
@@ -357,7 +381,8 @@ export async function fetchCommittees(query?: string, chamber?: string): Promise
  * Fetch detail of a committee by ID
  */
 export async function fetchCommitteeById(id: string): Promise<CommitteeDetail> {
-  const response = await fetch(`${API_BASE_URL}/committees/${id}`, {
+  const url = buildApiUrl(`/committees/${encodeURIComponent(id)}`);
+  const response = await fetch(url, {
     method: "GET",
     headers: {
       "Content-Type": "application/json",
@@ -398,15 +423,13 @@ export interface CivicOfficialItem {
 }
 
 export interface CountyOfficialItem {
-  id: string;
+  title: string;
   name: string;
-  office: string;
-  county: string;
-  state: string;
   party?: string;
-  is_incumbent?: boolean;
+  term_end?: string;
   phone?: string;
-  url?: string;
+  email?: string;
+  office_address?: string;
 }
 
 export interface LocalLookupResponse {
@@ -422,10 +445,9 @@ export interface LocalLookupResponse {
 
 export async function fetchStateCounties(state: string): Promise<string[]> {
   if (!state) return [];
-  const url = new URL(`${API_BASE_URL}/local/counties`);
-  url.searchParams.append("state", state);
+  const url = buildApiUrl("/local/counties", { state });
 
-  const response = await fetch(url.toString(), {
+  const response = await fetch(url, {
     method: "GET",
     headers: { "Content-Type": "application/json" },
     next: { revalidate: 3600 },
@@ -444,13 +466,9 @@ export async function fetchLocalElections(
   address?: string,
   county?: string
 ): Promise<LocalLookupResponse> {
-  const url = new URL(`${API_BASE_URL}/local`);
-  url.searchParams.append("state", state);
-  if (district) url.searchParams.append("district", district);
-  if (address) url.searchParams.append("address", address);
-  if (county) url.searchParams.append("county", county);
+  const url = buildApiUrl("/local", { state, district, address, county });
 
-  const response = await fetch(url.toString(), {
+  const response = await fetch(url, {
     method: "GET",
     headers: {
       "Content-Type": "application/json",
@@ -488,7 +506,8 @@ export interface CandidateDetailResponse {
 }
 
 export async function fetchCandidateById(candidateId: string): Promise<CandidateDetailResponse> {
-  const response = await fetch(`${API_BASE_URL}/candidates/${candidateId}`, {
+  const url = buildApiUrl(`/candidates/${encodeURIComponent(candidateId)}`);
+  const response = await fetch(url, {
     method: "GET",
     headers: {
       "Content-Type": "application/json",
@@ -538,10 +557,9 @@ export interface JudgeDetail extends JudgeBase {
 }
 
 export async function fetchJudges(query?: string): Promise<JudgeBase[]> {
-  const url = new URL(`${API_BASE_URL}/judges`);
-  if (query) url.searchParams.append("query", query);
+  const url = buildApiUrl("/judges", query ? { query } : undefined);
 
-  const response = await fetch(url.toString(), {
+  const response = await fetch(url, {
     method: "GET",
     headers: { "Content-Type": "application/json" },
     next: { revalidate: 60 },
@@ -555,7 +573,8 @@ export async function fetchJudges(query?: string): Promise<JudgeBase[]> {
 }
 
 export async function fetchJudgeById(judgeId: string): Promise<JudgeDetail> {
-  const response = await fetch(`${API_BASE_URL}/judges/${judgeId}`, {
+  const url = buildApiUrl(`/judges/${encodeURIComponent(judgeId)}`);
+  const response = await fetch(url, {
     method: "GET",
     headers: { "Content-Type": "application/json" },
     next: { revalidate: 60 },
