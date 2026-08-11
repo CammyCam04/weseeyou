@@ -58,6 +58,12 @@ variable "multi_az" {
   default     = false
 }
 
+variable "backup_retention_period" {
+  description = "Days of automated backups to retain (AWS Free Tier limit is 1 day)."
+  type        = number
+  default     = 1
+}
+
 variable "domain_name" {
   description = "Custom apex domain name (e.g. weseeyou.org) for Route 53 and CloudFront SSL."
   type        = string

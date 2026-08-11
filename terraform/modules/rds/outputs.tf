@@ -33,7 +33,17 @@ output "db_password_ssm_name" {
   value       = aws_ssm_parameter.db_password.name
 }
 
+output "db_password_ssm_arn" {
+  description = "SSM Parameter Store ARN containing the master DB password."
+  value       = aws_ssm_parameter.db_password.arn
+}
+
 output "db_url_ssm_name" {
   description = "SSM Parameter Store name containing the async SQLAlchemy DB connection URL."
   value       = aws_ssm_parameter.db_url.name
+}
+
+output "db_url_ssm_arn" {
+  description = "SSM Parameter Store ARN containing the async SQLAlchemy DB connection URL."
+  value       = aws_ssm_parameter.db_url.arn
 }

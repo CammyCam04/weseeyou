@@ -76,7 +76,7 @@ resource "aws_db_instance" "postgres" {
   allow_major_version_upgrade = false
   apply_immediately           = true
 
-  backup_retention_period   = 7
+  backup_retention_period   = var.backup_retention_period
   backup_window             = "03:00-04:00"
   maintenance_window        = "Mon:04:00-Mon:05:00"
   copy_tags_to_snapshot     = true
