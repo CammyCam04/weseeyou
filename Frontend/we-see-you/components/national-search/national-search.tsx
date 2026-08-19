@@ -13,9 +13,10 @@ import {
 
 interface NationalSearchProps {
   onSelectPolitician?: (id: string) => void;
+  onNavigateTab?: (tab: string) => void;
 }
 
-export default function NationalSearch({ onSelectPolitician }: NationalSearchProps) {
+export default function NationalSearch({ onSelectPolitician, onNavigateTab }: NationalSearchProps) {
   const [activeBranch, setActiveBranch] = useState<string>("congressional");
   const [query, setQuery] = useState("");
   const [chamberFilter, setChamberFilter] = useState<string>("ALL");
@@ -48,9 +49,9 @@ export default function NationalSearch({ onSelectPolitician }: NationalSearchPro
 
   // Branch options for National level
   const branchOptions: BranchOption[] = [
-    { id: "congressional", label: "Congressional (Senate & House)", isLive: true },
-    { id: "executive", label: "Executive (Presidency & Cabinet)" },
-    { id: "judicial", label: "Judicial (Federal Courts)" },
+    { id: "congressional", label: "Congressional (Senate & House)", shortLabel: "Congress", isLive: true },
+    { id: "executive", label: "Executive (Presidency & Cabinet)", shortLabel: "Executive" },
+    { id: "judicial", label: "Judicial (Federal Courts)", shortLabel: "Judicial" },
   ];
 
   // Chamber options for Congress
@@ -69,6 +70,10 @@ export default function NationalSearch({ onSelectPolitician }: NationalSearchPro
   ];
 
   const filteredPoliticians = politicians.filter((p) => {
+    // Only include Congressional members (Senate & House) on the Congressional page
+    if (p.chamber !== "Senate" && p.chamber !== "House") {
+      return false;
+    }
     if (partyFilter !== "ALL" && p.party !== partyFilter) {
       return false;
     }
@@ -77,6 +82,7 @@ export default function NationalSearch({ onSelectPolitician }: NationalSearchPro
     }
     return true;
   });
+
 
   return (
     <div className={styles.container}>
@@ -94,6 +100,7 @@ export default function NationalSearch({ onSelectPolitician }: NationalSearchPro
         query={query}
         onQueryChange={setQuery}
         placeholder="Search national politicians by name, state (e.g. CA, NY), or title..."
+        mobilePlaceholder="Search national politicians by name, state..."
         branchOptions={branchOptions}
         activeBranch={activeBranch}
         onBranchChange={setActiveBranch}
@@ -105,6 +112,7 @@ export default function NationalSearch({ onSelectPolitician }: NationalSearchPro
         activeParty={partyFilter}
         onPartyChange={setPartyFilter}
       />
+
 
       {/* Congressional Branch (Live) */}
       {activeBranch === "congressional" && (
@@ -158,8 +166,10 @@ export default function NationalSearch({ onSelectPolitician }: NationalSearchPro
             "Official executive orders and administrative policy records",
             "Financial disclosure statements and conflict-of-interest filings",
           ]}
-          backLink="/"
+          backLink="/?tab=national"
           backLabel="Return to Congressional Roster"
+          onBack={() => setActiveBranch("congressional")}
+          onViewMethodology={() => (onNavigateTab ? onNavigateTab("about") : undefined)}
         />
       )}
 
@@ -175,10 +185,13 @@ export default function NationalSearch({ onSelectPolitician }: NationalSearchPro
             "Majority opinions, landmark dissents, and jurisprudential history",
             "Judicial financial disclosures and recusal registries",
           ]}
-          backLink="/"
+          backLink="/?tab=national"
           backLabel="Return to Congressional Roster"
+          onBack={() => setActiveBranch("congressional")}
+          onViewMethodology={() => (onNavigateTab ? onNavigateTab("about") : undefined)}
         />
       )}
     </div>
   );
 }
+

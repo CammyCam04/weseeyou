@@ -125,7 +125,14 @@ export interface PoliticianDetail extends PoliticianSearchItem {
   has_multi_chamber_history?: boolean;
 }
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "/api";
+const API_BASE_URL =
+  process.env.NEXT_PUBLIC_API_URL ||
+  (typeof window !== "undefined" &&
+  (window.location.hostname === "localhost" ||
+    window.location.hostname === "127.0.0.1" ||
+    window.location.hostname === "0.0.0.0")
+    ? "http://127.0.0.1:8000/api"
+    : "/api");
 
 function buildApiUrl(path: string, params?: Record<string, string | undefined>): string {
   const cleanPath = path.startsWith("/") ? path : `/${path}`;

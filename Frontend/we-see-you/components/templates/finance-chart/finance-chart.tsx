@@ -1257,8 +1257,9 @@ export default function FinanceChart({
         </div>
 
         {/* Multi-Chamber History Toggle (House vs Senate vs All) */}
+        {/* Desktop Multi-Chamber History Toggle Section */}
         {hasMultipleChambers && (
-          <div className={styles.chamberToggleSection}>
+          <div className={`${styles.chamberToggleSection} ${styles.desktopOnly}`}>
             <div className={styles.chamberToggleHeader}>
               <span className={styles.chamberToggleTitle}>
                 Career Chamber & Tenure Filter
@@ -1318,6 +1319,63 @@ export default function FinanceChart({
           </div>
         )}
 
+        {/* Mobile Compact Dropdown Controls for Chamber & Election Cycles */}
+        <div className={styles.mobileControlRow}>
+          {hasMultipleChambers && (
+            <div className={styles.mobileSelectField}>
+              <label className={styles.mobileSelectLabel} htmlFor="mobile-chamber-select">
+                Chamber Focus:
+              </label>
+              <div className={styles.selectWrapper}>
+                <select
+                  id="mobile-chamber-select"
+                  className={styles.mobileSelect}
+                  value={chamberFilter}
+                  onChange={(e) => handleChamberFilterChange(e.target.value)}
+                >
+                  <option value={activeCurrentChamber}>
+                    U.S. {activeCurrentChamber} (Current • {careerStats.byChamber[activeCurrentChamber]?.count || 0} runs)
+                  </option>
+                  {distinctOffices
+                    .filter((off) => off !== activeCurrentChamber)
+                    .map((off) => (
+                      <option key={off} value={off}>
+                        U.S. {off} (Prior Service • {careerStats.byChamber[off]?.count || 0} runs)
+                      </option>
+                    ))}
+                  <option value="all">
+                    Complete Career History (All {allKeys.length} runs)
+                  </option>
+                </select>
+                <span className={styles.selectArrow}>▼</span>
+              </div>
+            </div>
+          )}
+
+          {!isCompleteCareerMode && visibleKeys.length > 1 && (
+            <div className={styles.mobileSelectField}>
+              <label className={styles.mobileSelectLabel} htmlFor="mobile-cycle-select">
+                Campaign Cycle:
+              </label>
+              <div className={styles.selectWrapper}>
+                <select
+                  id="mobile-cycle-select"
+                  className={styles.mobileSelect}
+                  value={activeKey}
+                  onChange={(e) => handleCampaignChange(e.target.value)}
+                >
+                  {visibleKeys.map((k) => (
+                    <option key={k} value={k}>
+                      {k} {k === visibleKeys[0] ? "(Most Recent)" : ""}
+                    </option>
+                  ))}
+                </select>
+                <span className={styles.selectArrow}>▼</span>
+              </div>
+            </div>
+          )}
+        </div>
+
         {/* Multi-Chamber Career Fundraising Summary Banner */}
         {hasMultipleChambers && (
           <div className={styles.careerSummaryBanner}>
@@ -1335,9 +1393,9 @@ export default function FinanceChart({
           </div>
         )}
 
-        {/* Election Cycle Selector (Shown only when focusing on a specific chamber/campaign, hidden in Complete Career History) */}
+        {/* Desktop Election Cycle Selector */}
         {!isCompleteCareerMode && visibleKeys.length > 1 && (
-          <div className={styles.cycleSelectorWrapper}>
+          <div className={`${styles.cycleSelectorWrapper} ${styles.desktopOnly}`}>
             <div className={styles.primaryCycleList}>
               {primaryKeys.map((k) => (
                 <button
@@ -1392,6 +1450,7 @@ export default function FinanceChart({
           </div>
         )}
       </div>
+
 
       {/* 1. Circle / Donut Percentage Graph (Cycle or Complete Career Lifetime) */}
       <div className={styles.overviewGrid}>

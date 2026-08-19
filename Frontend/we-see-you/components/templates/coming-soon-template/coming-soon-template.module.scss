@@ -8,6 +8,10 @@
   justify-content: center;
   align-items: center;
   padding: 3rem 1rem;
+
+  @include mobile {
+    padding: 1.5rem 0.5rem 2.5rem 0.5rem;
+  }
 }
 
 .card {
@@ -20,6 +24,14 @@
   box-shadow: 0 12px 30px -8px rgba(0, 0, 0, 0.4);
   position: relative;
   overflow: hidden;
+
+  @include tablet {
+    padding: 1.75rem 1.25rem;
+  }
+
+  @include mobile-sm {
+    padding: 1.35rem 1rem;
+  }
 
   &::before {
     content: "";
@@ -37,6 +49,12 @@
   align-items: center;
   gap: 0.75rem;
   margin-bottom: 1.25rem;
+  flex-wrap: wrap;
+
+  @include mobile {
+    gap: 0.5rem;
+    margin-bottom: 1rem;
+  }
 }
 
 .statusBadge {
@@ -82,6 +100,15 @@
   color: var(--foreground);
   letter-spacing: -0.02em;
   margin: 0 0 0.75rem 0;
+
+  @include mobile {
+    font-size: 1.45rem;
+    margin-bottom: 0.5rem;
+  }
+
+  @include mobile-sm {
+    font-size: 1.3rem;
+  }
 }
 
 .description {
@@ -89,6 +116,11 @@
   color: var(--foreground-secondary);
   line-height: 1.6;
   margin-bottom: 1.75rem;
+
+  @include mobile {
+    font-size: 0.92rem;
+    margin-bottom: 1.25rem;
+  }
 }
 
 .featureBox {
@@ -98,6 +130,11 @@
   padding: 1.25rem;
   margin-bottom: 2rem;
 
+  @include mobile {
+    padding: 1rem;
+    margin-bottom: 1.5rem;
+  }
+
   h3 {
     font-size: 0.9rem;
     font-weight: 700;
@@ -105,6 +142,10 @@
     letter-spacing: 0.05em;
     color: var(--foreground);
     margin: 0 0 0.85rem 0;
+
+    @include mobile {
+      font-size: 0.82rem;
+    }
   }
 
   ul {
@@ -122,11 +163,18 @@
     display: flex;
     align-items: center;
     gap: 0.5rem;
+    word-break: break-word;
+
+    @include mobile {
+      font-size: 0.85rem;
+      align-items: flex-start;
+    }
 
     &::before {
       content: "✓";
       color: $color-accent-light;
       font-weight: bold;
+      flex-shrink: 0;
     }
   }
 }
@@ -136,6 +184,11 @@
   align-items: center;
   gap: 1rem;
   flex-wrap: wrap;
+
+  @include mobile {
+    flex-direction: column;
+    gap: 0.75rem;
+  }
 }
 
 .primaryBtn {
@@ -148,12 +201,24 @@
   text-decoration: none;
   display: inline-flex;
   align-items: center;
+  justify-content: center;
   gap: 0.4rem;
+  min-height: 44px;
   transition: background-color 0.15s ease, transform 0.15s ease;
+  -webkit-tap-highlight-color: transparent;
+
+  @include mobile {
+    width: 100%;
+    font-size: 0.88rem;
+  }
 
   &:hover {
     background-color: $color-accent-hover;
     transform: translateY(-1px);
+  }
+
+  &:active {
+    transform: scale(0.99);
   }
 }
 
@@ -166,10 +231,25 @@
   border-radius: $radius-md;
   text-decoration: none;
   border: 1px solid var(--border-color);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 44px;
   transition: all 0.15s ease;
+  -webkit-tap-highlight-color: transparent;
+
+  @include mobile {
+    width: 100%;
+    font-size: 0.85rem;
+  }
 
   &:hover {
     color: var(--foreground);
     border-color: var(--foreground-muted);
   }
+
+  &:active {
+    background-color: rgba(255, 255, 255, 0.05);
+  }
 }
+

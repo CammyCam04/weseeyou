@@ -10,12 +10,13 @@
   border-bottom: 1px solid var(--border-color);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
+  padding-top: env(safe-area-inset-top, 0px);
 }
 
 .subHeader {
   background-color: rgba(0, 0, 0, 0.25);
   border-bottom: 1px solid rgba(255, 255, 255, 0.05);
-  padding: 0.35rem 2rem;
+  padding: 0.4rem 2rem;
   font-size: 0.725rem;
   font-weight: 600;
   letter-spacing: 0.05em;
@@ -23,8 +24,34 @@
   color: var(--foreground-muted);
   @include flex-between;
 
-  @media (max-width: 640px) {
+  @include tablet {
+    padding: 0.35rem 1rem;
+    font-size: 0.68rem;
+  }
+
+  @include mobile {
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.4rem 0.85rem;
+    font-size: 0.65rem;
+    letter-spacing: 0.03em;
+    line-height: 1.2;
+  }
+}
+
+.subHeaderFull {
+  display: inline;
+  @include mobile {
     display: none;
+  }
+}
+
+.subHeaderShort {
+  display: none;
+  @include mobile {
+    display: inline;
   }
 }
 
@@ -42,17 +69,27 @@
   }
 }
 
+.platformBadge {
+  display: inline-flex;
+  align-items: center;
+}
+
 .navbar {
   @include flex-between;
   padding: 0.85rem 2rem;
   max-width: 1280px;
   margin: 0 auto;
 
-  @media (max-width: 768px) {
+  @include tablet {
     flex-direction: column;
     align-items: flex-start;
-    gap: 1rem;
-    padding: 1rem;
+    gap: 0.75rem;
+    padding: 0.75rem 1rem;
+  }
+
+  @include mobile-sm {
+    padding: 0.65rem 0.75rem;
+    gap: 0.6rem;
   }
 }
 
@@ -62,6 +99,11 @@
   gap: 0.85rem;
   text-decoration: none;
   cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+
+  @include mobile {
+    gap: 0.65rem;
+  }
 
   .logoMark {
     width: 32px;
@@ -76,6 +118,7 @@
     justify-content: center;
     letter-spacing: -0.05em;
     box-shadow: 0 2px 8px rgba($color-accent, 0.35);
+    flex-shrink: 0;
   }
 
   .brandInfo {
@@ -89,6 +132,10 @@
     color: var(--foreground);
     letter-spacing: -0.02em;
     line-height: 1.1;
+
+    @include mobile {
+      font-size: 1.12rem;
+    }
   }
 
   .subtitle {
@@ -97,6 +144,21 @@
     font-weight: 600;
     letter-spacing: 0.03em;
     text-transform: uppercase;
+
+    @include mobile {
+      font-size: 0.68rem;
+    }
+  }
+}
+
+.navLinksContainer {
+  position: relative;
+  display: flex;
+  align-items: center;
+
+  @include tablet {
+    width: 100%;
+    overflow: hidden;
   }
 }
 
@@ -105,12 +167,85 @@
   align-items: center;
   gap: 0.4rem;
 
-  @media (max-width: 768px) {
+  @include tablet {
     width: 100%;
-    overflow-x: auto;
-    padding-bottom: 0.25rem;
+    @include touch-scroll;
+    padding: 0.1rem 0;
+    gap: 0.35rem;
+    /* Touch snap scrolling for iOS & Android */
+    scroll-snap-type: x mandatory;
+    -webkit-overflow-scrolling: touch;
   }
 }
+
+.scrollIndicator {
+  display: none;
+
+  @include tablet {
+    display: flex;
+    align-items: center;
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    height: 100%;
+    width: 32px;
+    pointer-events: none;
+    z-index: 2;
+
+    &.indicatorLeft {
+      left: 0;
+      justify-content: flex-start;
+      padding-left: 2px;
+      background: linear-gradient(to right, var(--card-bg) 60%, rgba(15, 23, 42, 0) 100%);
+
+      .indicatorChevron {
+        animation: pulseScrollLeft 1.6s infinite ease-in-out;
+      }
+    }
+
+    &.indicatorRight {
+      right: 0;
+      justify-content: flex-end;
+      padding-right: 2px;
+      background: linear-gradient(to left, var(--card-bg) 60%, rgba(15, 23, 42, 0) 100%);
+
+      .indicatorChevron {
+        animation: pulseScrollRight 1.6s infinite ease-in-out;
+      }
+    }
+
+    .indicatorChevron {
+      font-size: 1.25rem;
+      font-weight: 800;
+      color: $color-accent-light;
+      line-height: 1;
+      opacity: 0.9;
+    }
+  }
+}
+
+@keyframes pulseScrollRight {
+  0%, 100% {
+    transform: translateX(0);
+    opacity: 0.5;
+  }
+  50% {
+    transform: translateX(3px);
+    opacity: 1;
+  }
+}
+
+@keyframes pulseScrollLeft {
+  0%, 100% {
+    transform: translateX(0);
+    opacity: 0.5;
+  }
+  50% {
+    transform: translateX(-3px);
+    opacity: 1;
+  }
+}
+
 
 .navItem {
   color: var(--foreground-secondary);
@@ -124,6 +259,16 @@
   background: transparent;
   border: 1px solid transparent;
   cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+
+  @include tablet {
+    padding: 0.45rem 0.85rem;
+    font-size: 0.84rem;
+    scroll-snap-align: start;
+    min-height: 38px;
+    display: inline-flex;
+    align-items: center;
+  }
 
   &:hover {
     color: var(--foreground);
@@ -148,3 +293,5 @@
     color: #ffffff;
   }
 }
+
+
