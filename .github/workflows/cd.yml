@@ -109,6 +109,7 @@ jobs:
             cd /home/ubuntu/weseeyou
             git fetch --all
             git reset --hard origin/main
+            sudo chown -R ubuntu:ubuntu /home/ubuntu/weseeyou
 
       - name: Upload Compiled Next.js HTML/JS Assets to Server
         if: env.SSH_PRIVATE_KEY != ''
@@ -119,6 +120,7 @@ jobs:
           key: ${{ env.SSH_PRIVATE_KEY }}
           source: "Frontend/we-see-you/out"
           target: "/home/ubuntu/weseeyou/"
+          overwrite: true
 
       - name: Start Docker Application Stack
         if: env.SSH_PRIVATE_KEY != ''
