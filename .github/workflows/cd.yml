@@ -27,29 +27,29 @@ env:
   TARGET_ENV: ${{ github.event.inputs.target_environment || 'prod' }}
   DOMAIN_NAME: ${{ github.event.inputs.domain_name || 'weseeyou.app' }}
   AWS_REGION: "us-east-1"
-  AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-  AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-  SSH_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
+  SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
+  SSH_KEY_NAME: ${{ secrets.SSH_KEY_NAME || 'weseeyou-key' }}
 
 jobs:
   deploy:
-    name: Provision & Deploy to AWS
+    name: Provision & Deploy to AWS (${{ github.event.inputs.target_environment || 'prod' }})
+    environment: ${{ github.event.inputs.target_environment || 'prod' }}
     runs-on: ubuntu-latest
 
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
 
+      # -------------------------------------------------------------
+      # 1. AWS AUTHENTICATION & TERRAFORM PROVISIONING
+      # -------------------------------------------------------------
       - name: Configure AWS Credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
-          aws-access-key-id: ${{ env.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ env.AWS_SECRET_ACCESS_KEY }}
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ env.AWS_REGION }}
 
-      # -------------------------------------------------------------
-      # 1. TERRAFORM INFRASTRUCTURE PROVISIONING
-      # -------------------------------------------------------------
       - name: Setup HashiCorp Terraform
         uses: hashicorp/setup-terraform@v3
         with:
@@ -65,7 +65,8 @@ jobs:
           echo "Applying Terraform Infrastructure for environment=${TARGET_ENV} and domain_name=${DOMAIN_NAME}..."
           terraform apply -auto-approve \
             -var="environment=${TARGET_ENV}" \
-            -var="domain_name=${DOMAIN_NAME}"
+            -var="domain_name=${DOMAIN_NAME}" \
+            -var="ssh_key_name=${SSH_KEY_NAME}"
 
           SERVER_IP=$(terraform output -raw public_ip)
           echo "SERVER_IP=${SERVER_IP}" >> $GITHUB_OUTPUT
@@ -94,12 +95,12 @@ jobs:
       # 3. OPTIONAL REMOTE CONTAINER DEPLOYMENT VIA SSH
       # -------------------------------------------------------------
       - name: Deploy Docker Stack to Server (Optional)
-        if: env.SSH_KEY != ''
+        if: env.SSH_PRIVATE_KEY != ''
         uses: appleboy/ssh-action@v1.0.3
         with:
           host: ${{ steps.terraform.outputs.SERVER_IP }}
           username: ubuntu
-          key: ${{ env.SSH_KEY }}
+          key: ${{ env.SSH_PRIVATE_KEY }}
           script: |
             set -e
             if [ ! -d "/home/ubuntu/weseeyou" ]; then
@@ -108,4 +109,5 @@ jobs:
             cd /home/ubuntu/weseeyou
             git fetch --all
             git reset --hard origin/main
-            docker compose -f docker-compose.prod.yml up -d --build
+            sudo usermod -aG docker ubuntu || true
+            sudo docker compose -f docker-compose.prod.yml up -d --build

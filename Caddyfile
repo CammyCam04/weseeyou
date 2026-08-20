@@ -1,5 +1,5 @@
 # Caddy Reverse Proxy Configuration for We See You Backend
-:80 {
+weseeyou.app, www.weseeyou.app {
     # Proxy API requests to FastAPI container
     handle /api/* {
         reverse_proxy backend:8000

@@ -2,6 +2,7 @@
 # We See You (WSY) - Low-Cost Single EC2 Production Infrastructure 
 # =============================================================================
 
+
 provider "aws" {
   region = var.aws_region
 
@@ -36,8 +37,12 @@ data "aws_ami" "ubuntu_arm64" {
 # 2. Production Security Group (Least Privilege & Hardened Ingress)
 # -----------------------------------------------------------------------------
 resource "aws_security_group" "web_sg" {
-  name        = "${var.project_name}-${var.environment}-sg"
+  name_prefix = "${var.project_name}-${var.environment}-sg-"
   description = "Security group for low-cost single-instance web host"
+
+  lifecycle {
+    create_before_destroy = true
+  }
 
   ingress {
     description = "HTTP Traffic (Redirects to HTTPS)"
@@ -88,7 +93,7 @@ resource "aws_instance" "app_server" {
     http_put_response_hop_limit = 1
   }
 
-  # Storage: Encrypted 20 GB GP3 EBS SSD Volume
+  # Storage: Encrypted 20 GB GP3 EBS SSD Volume (~$1.60/month)
   root_block_device {
     volume_size           = 20
     volume_type           = "gp3"
