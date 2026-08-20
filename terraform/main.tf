@@ -81,9 +81,9 @@ resource "aws_security_group" "web_sg" {
 # 3. AWS Graviton ARM Compute Instance (t4g.micro / t4g.small)
 # -----------------------------------------------------------------------------
 resource "aws_instance" "app_server" {
-  ami                  = data.aws_ami.ubuntu_arm64.id
-  instance_type        = var.instance_type
-  key_name             = var.ssh_key_name != "" ? var.ssh_key_name : null
+  ami                    = data.aws_ami.ubuntu_arm64.id
+  instance_type          = var.instance_type
+  key_name               = var.ssh_key_name != "" ? var.ssh_key_name : null
   vpc_security_group_ids = [aws_security_group.web_sg.id]
 
   # Hardware Security: Enforce IMDSv2
