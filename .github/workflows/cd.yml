@@ -27,11 +27,11 @@ env:
   TARGET_ENV: ${{ github.event.inputs.target_environment || 'prod' }}
   DOMAIN_NAME: ${{ github.event.inputs.domain_name || 'weseeyou.app' }}
   AWS_REGION: "us-east-1"
-  SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
 
 jobs:
   deploy:
-    name: Provision & Deploy to AWS
+    name: Provision & Deploy to AWS (${{ github.event.inputs.target_environment || 'prod' }})
+    environment: ${{ github.event.inputs.target_environment || 'prod' }}
     runs-on: ubuntu-latest
 
     steps:
@@ -92,12 +92,12 @@ jobs:
       # 3. OPTIONAL REMOTE CONTAINER DEPLOYMENT VIA SSH
       # -------------------------------------------------------------
       - name: Deploy Docker Stack to Server (Optional)
-        if: env.SSH_PRIVATE_KEY != ''
+        if: secrets.SSH_PRIVATE_KEY != ''
         uses: appleboy/ssh-action@v1.0.3
         with:
           host: ${{ steps.terraform.outputs.SERVER_IP }}
           username: ubuntu
-          key: ${{ env.SSH_PRIVATE_KEY }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
           script: |
             set -e
             if [ ! -d "/home/ubuntu/weseeyou" ]; then
