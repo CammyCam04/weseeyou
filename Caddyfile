@@ -16,8 +16,8 @@ weseeyou.app, www.weseeyou.app {
     # Serve Next.js static export frontend web pages
     handle {
         root * /var/www/html
-        file_server
         try_files {path} {path}.html {path}/ /index.html
+        file_server
     }
 
     # Compression
