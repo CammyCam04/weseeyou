@@ -1,5 +1,5 @@
 {
-    email {$ACME_EMAIL:-admin@weseeyou.app}
+    email {$ACME_EMAIL}
 }
 
 weseeyou.app, www.weseeyou.app {
@@ -13,9 +13,11 @@ weseeyou.app, www.weseeyou.app {
         reverse_proxy backend:8000
     }
 
-    # Default fallback
+    # Serve Next.js static export frontend web pages
     handle {
-        reverse_proxy backend:8000
+        root * /var/www/html
+        file_server
+        try_files {path} {path}.html {path}/ /index.html
     }
 
     # Compression
