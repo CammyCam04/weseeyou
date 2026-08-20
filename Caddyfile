@@ -3,9 +3,14 @@
 }
 
 weseeyou.app, www.weseeyou.app {
-    # Proxy API requests to FastAPI container
+    # Proxy API requests to FastAPI container with keepalive connection pooling
     handle /api/* {
-        reverse_proxy backend:8000
+        reverse_proxy backend:8000 {
+            transport http {
+                keepalive 60s
+                keepalive_idle_conns 50
+            }
+        }
     }
 
     # Health check endpoint for monitoring

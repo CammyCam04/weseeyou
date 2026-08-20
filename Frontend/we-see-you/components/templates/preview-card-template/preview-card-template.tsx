@@ -73,10 +73,10 @@ export default function PreviewCardTemplate({
       (entries) => {
         entries.forEach((entry) => {
           if (entry.isIntersecting) {
-            // Card entered visible viewport: start 300ms buffer timer before prefetching
+            // Card entered visible viewport: start 100ms buffer timer before prefetching
             timer = setTimeout(() => {
               prefetchPolitician(id);
-            }, 300);
+            }, 100);
           } else {
             // Card scrolled out of viewport: cancel pending prefetch timer if user scrolled past fast
             if (timer) {
@@ -86,7 +86,7 @@ export default function PreviewCardTemplate({
           }
         });
       },
-      { threshold: 0.25 } // Trigger when at least 25% of card is visible on screen
+      { threshold: 0.15 } // Trigger when card enters viewport
     );
 
     const currentEl = cardRef.current;
@@ -115,6 +115,8 @@ export default function PreviewCardTemplate({
       href={targetHref}
       onClick={handleClick}
       onMouseEnter={handlePrefetch}
+      onPointerDown={handlePrefetch}
+      onTouchStart={handlePrefetch}
       onFocus={handlePrefetch}
       className={styles.card}
     >
