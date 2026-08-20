@@ -11,6 +11,8 @@ interface ComingSoonProps {
   upcomingFeatures?: string[];
   backLink?: string;
   backLabel?: string;
+  onBack?: () => void;
+  onViewMethodology?: () => void;
 }
 
 export default function ComingSoonTemplate({
@@ -23,9 +25,25 @@ export default function ComingSoonTemplate({
     "Legislative voting history and committee assignments",
     "Official executive actions and administrative disclosures",
   ],
-  backLink = "/",
+  backLink = "/?tab=national",
   backLabel = "Return to National Congress",
+  onBack,
+  onViewMethodology,
 }: ComingSoonProps) {
+  const handleBackClick = (e: React.MouseEvent) => {
+    if (onBack) {
+      e.preventDefault();
+      onBack();
+    }
+  };
+
+  const handleMethodologyClick = (e: React.MouseEvent) => {
+    if (onViewMethodology) {
+      e.preventDefault();
+      onViewMethodology();
+    }
+  };
+
   return (
     <div className={styles.container}>
       <div className={styles.card}>
@@ -51,10 +69,18 @@ export default function ComingSoonTemplate({
         )}
 
         <div className={styles.actionRow}>
-          <Link href={backLink} className={styles.primaryBtn}>
+          <Link
+            href={backLink}
+            onClick={handleBackClick}
+            className={styles.primaryBtn}
+          >
             {backLabel}
           </Link>
-          <Link href="/about" className={styles.secondaryBtn}>
+          <Link
+            href="/about"
+            onClick={handleMethodologyClick}
+            className={styles.secondaryBtn}
+          >
             View Data Sources & Methodology
           </Link>
         </div>

@@ -130,6 +130,14 @@
   }
 }
 
+.branchLabelFull {
+  display: inline;
+}
+
+.branchLabelShort {
+  display: none;
+}
+
 .branchSelector {
   display: flex;
   gap: 0.5rem;
@@ -152,6 +160,7 @@
   display: inline-flex;
   align-items: center;
   gap: 0.4rem;
+  -webkit-tap-highlight-color: transparent;
 
   &:hover {
     color: var(--foreground);
@@ -173,6 +182,7 @@
   border-radius: 999px;
   text-transform: uppercase;
   letter-spacing: 0.04em;
+  flex-shrink: 0;
 }
 
 .soonTag {
@@ -183,24 +193,107 @@
   padding: 0.1rem 0.4rem;
   border-radius: 999px;
   text-transform: uppercase;
+  flex-shrink: 0;
 }
 
-@media (max-width: 768px) {
+@include tablet {
+  .searchContainer {
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+  }
+
   .controlsRow {
     flex-direction: column;
     align-items: flex-start;
+    gap: 1rem;
   }
   
   .filterSection {
     width: 100%;
+    gap: 1rem;
+  }
+
+  .filterWrapper {
+    width: 100%;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.35rem;
+  }
+
+  .filterGroup {
+    width: 100%;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.25rem;
+  }
+
+  .filterBtn {
+    flex: 1 1 auto;
+    text-align: center;
+    min-height: 38px;
+    padding: 0.45rem 0.65rem;
+    font-size: 0.82rem;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
   }
 
   .branchSelector {
     width: 100%;
-    justify-content: stretch;
+    display: flex;
+    gap: 0.35rem;
+    overflow: hidden;
+
     .branchBtn {
-      flex: 1;
+      flex: 1 1 0;
+      min-width: 0;
       justify-content: center;
+      padding: 0.45rem 0.35rem;
+      font-size: 0.8rem;
+      min-height: 40px;
+      gap: 0.3rem;
+      overflow: hidden;
     }
   }
 }
+
+@include mobile {
+  .branchLabelFull {
+    display: none;
+  }
+
+  .branchLabelShort {
+    display: inline;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .branchSelector {
+    gap: 0.25rem;
+
+    .branchBtn {
+      padding: 0.4rem 0.25rem;
+      font-size: 0.76rem;
+      gap: 0.2rem;
+    }
+  }
+
+  .soonTag, .liveTag {
+    font-size: 0.58rem;
+    padding: 0.08rem 0.3rem;
+    letter-spacing: 0.02em;
+    flex-shrink: 0;
+  }
+}
+
+@include mobile-sm {
+  .branchSelector {
+    .branchBtn {
+      font-size: 0.72rem;
+      padding: 0.35rem 0.2rem;
+    }
+  }
+}
+
+

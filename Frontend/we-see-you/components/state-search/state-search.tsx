@@ -9,16 +9,20 @@ import {
   FilterOption,
 } from "../templates";
 
-export default function StateSearch() {
+interface StateSearchProps {
+  onNavigateTab?: (tab: string) => void;
+}
+
+export default function StateSearch({ onNavigateTab }: StateSearchProps = {}) {
   const [activeBranch, setActiveBranch] = useState<string>("legislative");
   const [query, setQuery] = useState("");
   const [chamberFilter, setChamberFilter] = useState<string>("ALL");
   const [partyFilter, setPartyFilter] = useState<string>("ALL");
 
   const branchOptions: BranchOption[] = [
-    { id: "legislative", label: "State Legislature (Senate & Assembly)" },
-    { id: "executive", label: "Executive (Governors & State Cabinet)" },
-    { id: "judicial", label: "Judicial (State Supreme Courts)" },
+    { id: "legislative", label: "State Legislature (Senate & Assembly)", shortLabel: "Legislature" },
+    { id: "executive", label: "Executive (Governors & State Cabinet)", shortLabel: "Exec/Gov" },
+    { id: "judicial", label: "Judicial (State Supreme Courts)", shortLabel: "Courts" },
   ];
 
   const chamberOptions: FilterOption[] = [
@@ -51,6 +55,7 @@ export default function StateSearch() {
         query={query}
         onQueryChange={setQuery}
         placeholder="Search state leaders by name, state (e.g. TX, FL, NY), or office title..."
+        mobilePlaceholder="Search state leaders by name, state..."
         branchOptions={branchOptions}
         activeBranch={activeBranch}
         onBranchChange={setActiveBranch}
@@ -62,6 +67,7 @@ export default function StateSearch() {
         activeParty={partyFilter}
         onPartyChange={setPartyFilter}
       />
+
 
       {/* Legislative Branch Tab */}
       {activeBranch === "legislative" && (
@@ -75,8 +81,10 @@ export default function StateSearch() {
             "State campaign finance donor disclosures via FollowTheMoney.org",
             "State legislative district map overlays and boundaries",
           ]}
-          backLink="/"
+          backLink="/?tab=national"
           backLabel="Explore National Congress"
+          onBack={() => (onNavigateTab ? onNavigateTab("national") : undefined)}
+          onViewMethodology={() => (onNavigateTab ? onNavigateTab("about") : undefined)}
         />
       )}
 
@@ -92,8 +100,10 @@ export default function StateSearch() {
             "Gubernatorial campaign finance and independent expenditure tracking",
             "Cabinet department directories and administrative appointments",
           ]}
-          backLink="/"
+          backLink="/?tab=national"
           backLabel="Explore National Congress"
+          onBack={() => (onNavigateTab ? onNavigateTab("national") : undefined)}
+          onViewMethodology={() => (onNavigateTab ? onNavigateTab("about") : undefined)}
         />
       )}
 
@@ -109,10 +119,13 @@ export default function StateSearch() {
             "Key constitutional rulings and state court jurisprudence",
             "Judicial tenure, terms, and mandatory retirement ages",
           ]}
-          backLink="/"
+          backLink="/?tab=national"
           backLabel="Explore National Congress"
+          onBack={() => (onNavigateTab ? onNavigateTab("national") : undefined)}
+          onViewMethodology={() => (onNavigateTab ? onNavigateTab("about") : undefined)}
         />
       )}
     </div>
   );
 }
+

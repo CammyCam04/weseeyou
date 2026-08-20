@@ -9,16 +9,20 @@ import {
   FilterOption,
 } from "../templates";
 
-export default function CountyMunicipalitySearch() {
+interface CountyMunicipalitySearchProps {
+  onNavigateTab?: (tab: string) => void;
+}
+
+export default function CountyMunicipalitySearch({ onNavigateTab }: CountyMunicipalitySearchProps = {}) {
   const [activeBranch, setActiveBranch] = useState<string>("legislative");
   const [query, setQuery] = useState("");
   const [bodyFilter, setBodyFilter] = useState<string>("ALL");
   const [partyFilter, setPartyFilter] = useState<string>("ALL");
 
   const branchOptions: BranchOption[] = [
-    { id: "legislative", label: "Local Legislative (City Councils & County Commissions)" },
-    { id: "executive", label: "Local Executive (Mayors & County Executives)" },
-    { id: "judicial", label: "Local Courts (Municipal & County Courts)" },
+    { id: "legislative", label: "Local Legislative (City Councils & County Commissions)", shortLabel: "Councils" },
+    { id: "executive", label: "Local Executive (Mayors & County Executives)", shortLabel: "Mayors" },
+    { id: "judicial", label: "Local Courts (Municipal & County Courts)", shortLabel: "Courts" },
   ];
 
   const bodyOptions: FilterOption[] = [
@@ -52,6 +56,7 @@ export default function CountyMunicipalitySearch() {
         query={query}
         onQueryChange={setQuery}
         placeholder="Search local records by City, County, ZIP Code, or official name..."
+        mobilePlaceholder="Search local records by City, County, ZIP..."
         branchOptions={branchOptions}
         activeBranch={activeBranch}
         onBranchChange={setActiveBranch}
@@ -63,6 +68,7 @@ export default function CountyMunicipalitySearch() {
         activeParty={partyFilter}
         onPartyChange={setPartyFilter}
       />
+
 
       {/* Local Legislative Tab */}
       {activeBranch === "legislative" && (
@@ -76,8 +82,10 @@ export default function CountyMunicipalitySearch() {
             "Local municipal voting records, ordinances, and zoning decisions",
             "City council meeting schedules, transcripts, and public comment registries",
           ]}
-          backLink="/"
+          backLink="/?tab=national"
           backLabel="Explore National Congress"
+          onBack={() => (onNavigateTab ? onNavigateTab("national") : undefined)}
+          onViewMethodology={() => (onNavigateTab ? onNavigateTab("about") : undefined)}
         />
       )}
 
@@ -93,8 +101,10 @@ export default function CountyMunicipalitySearch() {
             "County executives, county judges, sheriffs, and district attorneys",
             "Municipal executive directives and city department leadership",
           ]}
-          backLink="/"
+          backLink="/?tab=national"
           backLabel="Explore National Congress"
+          onBack={() => (onNavigateTab ? onNavigateTab("national") : undefined)}
+          onViewMethodology={() => (onNavigateTab ? onNavigateTab("about") : undefined)}
         />
       )}
 
@@ -110,10 +120,13 @@ export default function CountyMunicipalitySearch() {
             "Local judicial retention election disclosures and ratings",
             "Jurisdictional boundaries for county and city court systems",
           ]}
-          backLink="/"
+          backLink="/?tab=national"
           backLabel="Explore National Congress"
+          onBack={() => (onNavigateTab ? onNavigateTab("national") : undefined)}
+          onViewMethodology={() => (onNavigateTab ? onNavigateTab("about") : undefined)}
         />
       )}
     </div>
   );
 }
+

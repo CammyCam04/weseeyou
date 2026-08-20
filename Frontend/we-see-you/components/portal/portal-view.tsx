@@ -11,9 +11,13 @@ import TestJsonView from "../test-json/test-json-view";
 import { ProfileTemplate } from "../templates";
 import { fetchPoliticianById, fetchPoliticianFinance, PoliticianDetail, FinanceSummary } from "@/lib/api";
 
-export default function PortalView() {
+interface PortalViewProps {
+  initialTab?: string;
+}
+
+export default function PortalView({ initialTab = "national" }: PortalViewProps = {}) {
   const [mounted, setMounted] = useState<boolean>(false);
-  const [activeTab, setActiveTab] = useState<string>("national");
+  const [activeTab, setActiveTab] = useState<string>(initialTab);
   const [selectedPoliticianId, setSelectedPoliticianId] = useState<string | null>(null);
 
   // Profile data state
@@ -36,11 +40,14 @@ export default function PortalView() {
 
     if (tabParam) {
       setActiveTab(tabParam);
+    } else if (initialTab) {
+      setActiveTab(initialTab);
     }
     if (idParam) {
       setSelectedPoliticianId(idParam);
     }
-  }, []);
+  }, [initialTab]);
+
 
   // Fetch politician details when selectedPoliticianId changes
   useEffect(() => {
@@ -136,9 +143,16 @@ export default function PortalView() {
         ) : (
           /* Active Tab View */
           <>
-            {activeTab === "national" && <NationalSearch onSelectPolitician={setSelectedPoliticianId} />}
-            {activeTab === "state" && <StateSearch />}
-            {activeTab === "county-municipality" && <CountyMunicipalitySearch />}
+            {activeTab === "national" && (
+              <NationalSearch
+                onSelectPolitician={setSelectedPoliticianId}
+                onNavigateTab={handleTabChange}
+              />
+            )}
+            {activeTab === "state" && <StateSearch onNavigateTab={handleTabChange} />}
+            {activeTab === "county-municipality" && (
+              <CountyMunicipalitySearch onNavigateTab={handleTabChange} />
+            )}
             {activeTab === "about" && <AboutView />}
             {activeTab === "test-json" && <TestJsonView />}
           </>
@@ -147,3 +161,4 @@ export default function PortalView() {
     </div>
   );
 }
+

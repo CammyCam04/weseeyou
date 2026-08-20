@@ -6,6 +6,14 @@
   max-width: 1100px;
   margin: 0 auto;
   padding: 2.5rem 1.5rem 4rem 1.5rem;
+
+  @include tablet {
+    padding: 1.5rem 1rem 3rem 1rem;
+  }
+
+  @include mobile-sm {
+    padding: 1.25rem 0.75rem 2.5rem 0.75rem;
+  }
 }
 
 .header {
@@ -13,12 +21,26 @@
   padding-bottom: 1.5rem;
   border-bottom: 1px solid var(--border-color);
 
+  @include mobile {
+    margin-bottom: 1.5rem;
+    padding-bottom: 1rem;
+  }
+
   h1 {
     font-size: 2.25rem;
     font-weight: 800;
     letter-spacing: -0.03em;
     color: var(--foreground);
     margin: 0 0 0.5rem 0;
+
+    @include mobile {
+      font-size: 1.6rem;
+      letter-spacing: -0.02em;
+    }
+
+    @include mobile-sm {
+      font-size: 1.4rem;
+    }
 
     span {
       color: $color-accent;
@@ -31,6 +53,11 @@
     max-width: 760px;
     margin: 0;
     line-height: 1.6;
+
+    @include mobile {
+      font-size: 0.92rem;
+      line-height: 1.55;
+    }
   }
 }
 
@@ -42,12 +69,25 @@
   margin-bottom: 2rem;
   box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
 
+  @include tablet {
+    padding: 1.5rem 1.25rem;
+    margin-bottom: 1.5rem;
+  }
+
+  @include mobile-sm {
+    padding: 1.25rem 0.85rem;
+  }
+
   h2 {
     font-size: 1.35rem;
     font-weight: 700;
     color: var(--foreground);
     margin: 0 0 0.75rem 0;
     letter-spacing: -0.01em;
+
+    @include mobile {
+      font-size: 1.15rem;
+    }
   }
 
   p {
@@ -55,11 +95,16 @@
     font-size: 0.95rem;
     line-height: 1.6;
     margin: 0 0 1.5rem 0;
+
+    @include mobile {
+      font-size: 0.88rem;
+      margin-bottom: 1rem;
+    }
   }
 }
 
 .tableWrapper {
-  overflow-x: auto;
+  width: 100%;
 }
 
 .table {
@@ -93,7 +138,57 @@
   tr:last-child td {
     border-bottom: none;
   }
+
+  @include mobile {
+    display: block;
+    width: 100%;
+
+    thead {
+      display: none;
+    }
+
+    tbody {
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+      width: 100%;
+    }
+
+    tr {
+      display: flex;
+      flex-direction: column;
+      gap: 0.4rem;
+      padding: 0.85rem 1rem;
+      background-color: rgba(255, 255, 255, 0.025);
+      border: 1px solid var(--border-color);
+      border-radius: $radius-sm;
+    }
+
+    td {
+      padding: 0;
+      border: none;
+
+      &:first-child {
+        display: flex;
+        align-items: center;
+        margin-bottom: 0.15rem;
+      }
+
+      &:nth-child(2) {
+        font-size: 0.92rem;
+        color: var(--foreground);
+        font-weight: 600;
+      }
+
+      &:nth-child(3) {
+        font-size: 0.85rem;
+        color: var(--foreground-secondary);
+        line-height: 1.5;
+      }
+    }
+  }
 }
+
 
 .codeBadge {
   font-family: var(--font-geist-mono, monospace);
@@ -109,8 +204,13 @@
 
 .dataList {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 280px), 1fr));
   gap: 1.25rem;
+
+  @include mobile {
+    grid-template-columns: 1fr;
+    gap: 0.85rem;
+  }
 }
 
 .dataItem {
@@ -119,11 +219,19 @@
   border-radius: $radius-md;
   padding: 1.25rem;
 
+  @include mobile {
+    padding: 1rem;
+  }
+
   h3 {
     font-size: 1rem;
     font-weight: 700;
     color: var(--foreground);
     margin: 0 0 0.5rem 0;
+
+    @include mobile {
+      font-size: 0.92rem;
+    }
   }
 
   p {
@@ -131,5 +239,10 @@
     color: var(--foreground-secondary);
     margin: 0;
     line-height: 1.5;
+
+    @include mobile {
+      font-size: 0.84rem;
+    }
   }
 }
+

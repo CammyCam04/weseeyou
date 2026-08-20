@@ -8,6 +8,7 @@ import styles from "./search-template.module.scss";
 export interface BranchOption {
   id: string;
   label: string;
+  shortLabel?: string;
   isLive?: boolean;
 }
 
@@ -20,6 +21,7 @@ interface SearchTemplateProps {
   query: string;
   onQueryChange: (val: string) => void;
   placeholder?: string;
+  mobilePlaceholder?: string;
 
   // Branch selector (e.g. Congressional, Executive, Judicial)
   branchOptions?: BranchOption[];
@@ -45,6 +47,7 @@ export default function SearchTemplate({
   query,
   onQueryChange,
   placeholder = "Search by name, state (e.g. CA, NY), or office title...",
+  mobilePlaceholder,
   branchOptions,
   activeBranch,
   onBranchChange,
@@ -57,6 +60,19 @@ export default function SearchTemplate({
   onPartyChange,
   children,
 }: SearchTemplateProps) {
+  const [isMobile, setIsMobile] = React.useState(false);
+
+  React.useEffect(() => {
+    const handleResize = () => {
+      setIsMobile(window.innerWidth <= 640);
+    };
+    handleResize();
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
+
+  const activePlaceholder = isMobile && mobilePlaceholder ? mobilePlaceholder : placeholder;
+
   return (
     <div className={styles.searchContainer}>
       {/* Branch Selector Tabs if provided */}
@@ -71,7 +87,8 @@ export default function SearchTemplate({
                 className={`${styles.branchBtn} ${isActive ? styles.activeBranch : ""}`}
                 onClick={() => onBranchChange(opt.id)}
               >
-                <span>{opt.label}</span>
+                <span className={styles.branchLabelFull}>{opt.label}</span>
+                <span className={styles.branchLabelShort}>{opt.shortLabel || opt.label}</span>
                 {opt.isLive ? (
                   <span className={styles.liveTag}>Live</span>
                 ) : (
@@ -90,11 +107,12 @@ export default function SearchTemplate({
         </span>
         <input
           type="text"
-          placeholder={placeholder}
+          placeholder={activePlaceholder}
           className={styles.input}
           value={query}
           onChange={(e) => onQueryChange(e.target.value)}
         />
+
         {query && (
           <button
             type="button"
