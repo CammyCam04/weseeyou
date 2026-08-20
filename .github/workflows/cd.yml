@@ -28,6 +28,7 @@ env:
   DOMAIN_NAME: ${{ github.event.inputs.domain_name || 'weseeyou.app' }}
   AWS_REGION: "us-east-1"
   SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
+  SSH_KEY_NAME: ${{ secrets.SSH_KEY_NAME || 'weseeyou-key' }}
 
 jobs:
   deploy:
@@ -64,7 +65,8 @@ jobs:
           echo "Applying Terraform Infrastructure for environment=${TARGET_ENV} and domain_name=${DOMAIN_NAME}..."
           terraform apply -auto-approve \
             -var="environment=${TARGET_ENV}" \
-            -var="domain_name=${DOMAIN_NAME}"
+            -var="domain_name=${DOMAIN_NAME}" \
+            -var="ssh_key_name=${SSH_KEY_NAME}"
 
           SERVER_IP=$(terraform output -raw public_ip)
           echo "SERVER_IP=${SERVER_IP}" >> $GITHUB_OUTPUT
