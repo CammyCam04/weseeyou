@@ -1,4 +1,9 @@
-import { fetchPoliticianById, fetchPoliticianFinance } from "@/lib/api";
+import {
+  fetchPoliticianById,
+  fetchPoliticianFinance,
+  PoliticianDetail,
+  FinanceSummary,
+} from "@/lib/api";
 import { ProfileTemplate } from "../templates";
 
 interface ProfileViewProps {
@@ -6,23 +11,29 @@ interface ProfileViewProps {
 }
 
 export default async function ProfileView({ id }: ProfileViewProps) {
-  let politician = null;
-  let finance = null;
+  let politician: PoliticianDetail | null = null;
+  let finance: Record<string, FinanceSummary> | null = null;
   let errorMsg: string | null = null;
 
-  try {
-    politician = await fetchPoliticianById(id);
-  } catch (err: unknown) {
-    console.error(err);
-    errorMsg = err instanceof Error ? err.message : "Could not retrieve politician profile.";
+  const [profResult, finResult] = await Promise.allSettled([
+    fetchPoliticianById(id),
+    fetchPoliticianFinance(id),
+  ]);
+
+  if (profResult.status === "fulfilled") {
+    politician = profResult.value;
+  } else {
+    console.error(profResult.reason);
+    errorMsg =
+      profResult.reason instanceof Error
+        ? profResult.reason.message
+        : "Could not retrieve politician profile.";
   }
 
-  if (politician) {
-    try {
-      finance = await fetchPoliticianFinance(id);
-    } catch (err: unknown) {
-      console.warn("Could not retrieve politician finance records:", err);
-    }
+  if (finResult.status === "fulfilled") {
+    finance = finResult.value;
+  } else {
+    console.warn("Could not retrieve politician finance records:", finResult.reason);
   }
 
   return (

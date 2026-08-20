@@ -2,6 +2,11 @@ import { describe, it, expect, vi } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
 import React from 'react';
 import PreviewCardTemplate from '../components/templates/preview-card-template/preview-card-template';
+import { prefetchPolitician } from '@/lib/api';
+
+vi.mock('@/lib/api', () => ({
+  prefetchPolitician: vi.fn(),
+}));
 
 describe('PreviewCardTemplate Component', () => {
   it('renders politician full name, title, state, and party badge', () => {
@@ -63,5 +68,28 @@ describe('PreviewCardTemplate Component', () => {
     fireEvent.click(card);
 
     expect(handleSelect).toHaveBeenCalledWith('S000033');
+  });
+
+  it('triggers prefetch on mouseEnter, pointerDown, and touchStart', () => {
+    vi.clearAllMocks();
+    render(
+      <PreviewCardTemplate
+        id="S000033"
+        firstName="Bernie"
+        lastName="Sanders"
+        title="U.S. Senator"
+        party="I"
+      />
+    );
+
+    const card = screen.getByRole('link');
+    fireEvent.pointerDown(card);
+    expect(prefetchPolitician).toHaveBeenCalledWith('S000033');
+
+    fireEvent.touchStart(card);
+    expect(prefetchPolitician).toHaveBeenCalledWith('S000033');
+
+    fireEvent.mouseEnter(card);
+    expect(prefetchPolitician).toHaveBeenCalledWith('S000033');
   });
 });

@@ -61,13 +61,22 @@ export default function PortalView({ initialTab = "national" }: PortalViewProps 
       setProfileLoading(true);
       setProfileError(null);
       try {
-        const prof = await fetchPoliticianById(selectedPoliticianId!);
-        setProfileData(prof);
-        try {
-          const fin = await fetchPoliticianFinance(selectedPoliticianId!);
-          setFinanceData(fin);
-        } catch (finErr) {
-          console.warn("Finance fetch warning:", finErr);
+        const id = selectedPoliticianId!;
+        const [profResult, finResult] = await Promise.allSettled([
+          fetchPoliticianById(id),
+          fetchPoliticianFinance(id),
+        ]);
+
+        if (profResult.status === "fulfilled") {
+          setProfileData(profResult.value);
+        } else {
+          throw profResult.reason;
+        }
+
+        if (finResult.status === "fulfilled") {
+          setFinanceData(finResult.value);
+        } else {
+          console.warn("Finance fetch warning:", finResult.reason);
           setFinanceData(null);
         }
       } catch (err: unknown) {
