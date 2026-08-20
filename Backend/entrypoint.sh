@@ -10,5 +10,5 @@ if [ -n "$DATABASE_URL" ]; then
     python scripts/seed_database.py || echo "Database seed step completed with warnings."
 fi
 
-echo "Starting FastAPI application via Uvicorn..."
-exec uvicorn main:app --host 0.0.0.0 --port 8000
+echo "Starting FastAPI application via Uvicorn (Multi-worker mode)..."
+exec uvicorn main:app --host 0.0.0.0 --port 8000 --workers ${UVICORN_WORKERS:-2}

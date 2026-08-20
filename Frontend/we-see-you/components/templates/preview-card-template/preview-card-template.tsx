@@ -1,9 +1,10 @@
 "use client";
 
-import React from "react";
+import React, { useRef, useEffect } from "react";
 import Link from "next/link";
 import styles from "./preview-card-template.module.scss";
 import Avatar from "../avatar/avatar";
+import { prefetchPolitician } from "@/lib/api";
 
 export interface PreviewCardProps {
   id: string;
@@ -34,6 +35,7 @@ export default function PreviewCardTemplate({
   profileImageUrl,
   badgeLabel,
 }: PreviewCardProps) {
+  const cardRef = useRef<HTMLAnchorElement>(null);
   const targetHref = href || (chamber === "Judicial" ? `/judge/${id}` : `/profile/${id}`);
 
   const partyClasses: Record<string, string> = {
@@ -54,6 +56,52 @@ export default function PreviewCardTemplate({
   const displayPartyLabel = badgeLabel || partyLabels[party] || party || "Independent";
   const displayLocation = state || jurisdiction || "U.S.";
 
+  // Immediate manual prefetch handler for mouse hover / focus
+  const handlePrefetch = () => {
+    if (id) {
+      prefetchPolitician(id);
+    }
+  };
+
+  // Viewport Dwell Prefetching for Mobile & Desktop (300ms buffer timer)
+  useEffect(() => {
+    if (!id || typeof window === "undefined" || !("IntersectionObserver" in window)) return;
+
+    let timer: NodeJS.Timeout | null = null;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            // Card entered visible viewport: start 300ms buffer timer before prefetching
+            timer = setTimeout(() => {
+              prefetchPolitician(id);
+            }, 300);
+          } else {
+            // Card scrolled out of viewport: cancel pending prefetch timer if user scrolled past fast
+            if (timer) {
+              clearTimeout(timer);
+              timer = null;
+            }
+          }
+        });
+      },
+      { threshold: 0.25 } // Trigger when at least 25% of card is visible on screen
+    );
+
+    const currentEl = cardRef.current;
+    if (currentEl) {
+      observer.observe(currentEl);
+    }
+
+    return () => {
+      if (timer) clearTimeout(timer);
+      if (currentEl) {
+        observer.unobserve(currentEl);
+      }
+    };
+  }, [id]);
+
   const handleClick = (e: React.MouseEvent) => {
     if (onSelect) {
       e.preventDefault();
@@ -62,7 +110,14 @@ export default function PreviewCardTemplate({
   };
 
   return (
-    <Link href={targetHref} onClick={handleClick} className={styles.card}>
+    <Link
+      ref={cardRef}
+      href={targetHref}
+      onClick={handleClick}
+      onMouseEnter={handlePrefetch}
+      onFocus={handlePrefetch}
+      className={styles.card}
+    >
       <div className={styles.cardTop}>
         <Avatar
           src={profileImageUrl}

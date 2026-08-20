@@ -1,0 +1,20 @@
+# Caddy Reverse Proxy Configuration for We See You Backend
+:80 {
+    # Proxy API requests to FastAPI container
+    handle /api/* {
+        reverse_proxy backend:8000
+    }
+
+    # Health check endpoint for monitoring
+    handle /health {
+        reverse_proxy backend:8000
+    }
+
+    # Default fallback
+    handle {
+        reverse_proxy backend:8000
+    }
+
+    # Compression
+    encode gzip zstd
+}

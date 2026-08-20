@@ -1,0 +1,52 @@
+version: '3.8'
+
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: wsy_db
+    restart: always
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-wsy_admin}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-wsy_secure_password_2026}
+      POSTGRES_DB: ${POSTGRES_DB:-weseeyou}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-wsy_admin} -d ${POSTGRES_DB:-weseeyou}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    build:
+      context: ./Backend
+      dockerfile: Dockerfile
+    container_name: wsy_backend
+    restart: always
+    environment:
+      DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:-wsy_admin}:${POSTGRES_PASSWORD:-wsy_secure_password_2026}@db:5432/${POSTGRES_DB:-weseeyou}
+      ENVIRONMENT: production
+    depends_on:
+      db:
+        condition: service_healthy
+    ports:
+      - "8000:8000"
+
+  caddy:
+    image: caddy:2-alpine
+    container_name: wsy_caddy
+    restart: always
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      - backend
+
+volumes:
+  postgres_data:
+  caddy_data:
+  caddy_config:

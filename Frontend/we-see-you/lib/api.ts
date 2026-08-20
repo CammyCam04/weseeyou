@@ -134,6 +134,9 @@ const API_BASE_URL =
     ? "http://127.0.0.1:8000/api"
     : "/api");
 
+// Client-side prefetch cache for 0ms instantaneous navigation
+const _prefetchCache = new Map<string, { profile?: Promise<PoliticianDetail>; finance?: Promise<Record<string, FinanceSummary>> }>();
+
 function buildApiUrl(path: string, params?: Record<string, string | undefined>): string {
   const cleanPath = path.startsWith("/") ? path : `/${path}`;
   const isAbsolute = API_BASE_URL.startsWith("http://") || API_BASE_URL.startsWith("https://");
@@ -186,26 +189,51 @@ export async function fetchPoliticians(query?: string): Promise<PoliticianSearch
 }
 
 /**
- * Fetch detailed profile of a politician by ID
+ * Prefetches a politician profile and campaign finance data into memory in the background.
+ */
+export function prefetchPolitician(id: string): void {
+  if (!id || _prefetchCache.has(id)) return;
+  _prefetchCache.set(id, {
+    profile: fetchPoliticianById(id).catch((err) => {
+      _prefetchCache.delete(id);
+      throw err;
+    }),
+    finance: fetchPoliticianFinance(id).catch(() => ({} as Record<string, FinanceSummary>)),
+  });
+}
+
+/**
+ * Fetch detailed profile information for a single politician by ID.
+ * Returns cached promise if prefetched.
  */
 export async function fetchPoliticianById(id: string): Promise<PoliticianDetail> {
+  const cached = _prefetchCache.get(id);
+  if (cached?.profile) {
+    return cached.profile;
+  }
+
   const url = buildApiUrl(`/politicians/${encodeURIComponent(id)}`);
-  const response = await fetch(url, {
+  const promise = fetch(url, {
     method: "GET",
     headers: {
       "Content-Type": "application/json",
     },
     next: { revalidate: 60 },
+  }).then(async (response) => {
+    if (!response.ok) {
+      if (response.status === 404) {
+        throw new Error(`Politician with ID ${id} not found`);
+      }
+      throw new Error(`Failed to fetch politician detail: ${response.statusText}`);
+    }
+    return response.json();
   });
 
-  if (!response.ok) {
-    if (response.status === 404) {
-      throw new Error(`Politician with ID ${id} not found`);
-    }
-    throw new Error(`Failed to fetch politician detail: ${response.statusText}`);
+  if (!_prefetchCache.has(id)) {
+    _prefetchCache.set(id, { profile: promise });
   }
 
-  return response.json();
+  return promise;
 }
 
 export interface ContributorItem {
@@ -272,27 +300,37 @@ export interface FinanceSummary {
   independent_expenditures?: IndependentExpenditureItem[];
 }
 
-/**
- * Fetch campaign finance summary and history for a politician by ID
- */
 export async function fetchPoliticianFinance(id: string): Promise<Record<string, FinanceSummary>> {
+  const cached = _prefetchCache.get(id);
+  if (cached?.finance) {
+    return cached.finance;
+  }
+
   const url = buildApiUrl(`/politicians/${encodeURIComponent(id)}/finance`);
-  const response = await fetch(url, {
+  const promise = fetch(url, {
     method: "GET",
     headers: {
       "Content-Type": "application/json",
     },
     next: { revalidate: 60 },
+  }).then(async (response) => {
+    if (!response.ok) {
+      if (response.status === 404) {
+        throw new Error(`Finance records for Politician ID ${id} not found`);
+      }
+      throw new Error(`Failed to fetch politician finance records: ${response.statusText}`);
+    }
+    return response.json();
   });
 
-  if (!response.ok) {
-    if (response.status === 404) {
-      throw new Error(`Finance records for Politician ID ${id} not found`);
-    }
-    throw new Error(`Failed to fetch politician finance records: ${response.statusText}`);
+  if (_prefetchCache.has(id)) {
+    const entry = _prefetchCache.get(id)!;
+    entry.finance = promise;
+  } else {
+    _prefetchCache.set(id, { finance: promise });
   }
 
-  return response.json();
+  return promise;
 }
 
 export interface PoliticianLegislationData {

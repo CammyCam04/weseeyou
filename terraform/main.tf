@@ -1,5 +1,5 @@
 # =============================================================================
-# We See You (WSY) - Production Infrastructure Deployment
+# We See You (WSY) - Low-Cost Single EC2 Production Infrastructure 
 # =============================================================================
 
 provider "aws" {
@@ -15,190 +15,109 @@ provider "aws" {
 }
 
 # -----------------------------------------------------------------------------
-# 1. Multi-AZ Virtual Private Cloud (VPC) Module
+# 1. Ubuntu 24.04 LTS ARM64 AMI (AWS Graviton Optimized)
 # -----------------------------------------------------------------------------
-module "vpc" {
-  source = "./modules/vpc"
+data "aws_ami" "ubuntu_arm64" {
+  most_recent = true
+  owners      = ["099720109477"] # Canonical
 
-  project_name       = var.project_name
-  environment        = var.environment
-  vpc_cidr           = var.vpc_cidr
-  availability_zones = var.availability_zones
-}
-
-# -----------------------------------------------------------------------------
-# 2. Security Groups Module (Least-Privilege Isolation)
-# -----------------------------------------------------------------------------
-module "security" {
-  source = "./modules/security"
-
-  project_name = var.project_name
-  environment  = var.environment
-  vpc_id       = module.vpc.vpc_id
-}
-
-# -----------------------------------------------------------------------------
-# 3. Amazon RDS PostgreSQL Database Module
-# -----------------------------------------------------------------------------
-module "rds" {
-  source = "./modules/rds"
-
-  project_name            = var.project_name
-  environment             = var.environment
-  db_name                 = var.db_name
-  db_username             = var.db_username
-  db_instance_class       = var.db_instance_class
-  db_allocated_storage    = var.db_allocated_storage
-  multi_az                = var.multi_az
-  backup_retention_period = var.backup_retention_period
-  db_subnet_group_name    = module.vpc.db_subnet_group_name
-  rds_security_group_id   = module.security.rds_security_group_id
-}
-
-# -----------------------------------------------------------------------------
-# 4. Application Load Balancer Module (Public Ingress & Health Checks)
-# -----------------------------------------------------------------------------
-module "alb" {
-  source = "./modules/alb"
-
-  project_name          = var.project_name
-  environment           = var.environment
-  vpc_id                = module.vpc.vpc_id
-  public_subnet_ids     = module.vpc.public_subnet_ids
-  alb_security_group_id = module.security.alb_security_group_id
-}
-
-# -----------------------------------------------------------------------------
-# 5. Amazon ECS Fargate Module (Containerized FastAPI Backend)
-# -----------------------------------------------------------------------------
-module "ecs" {
-  source = "./modules/ecs"
-
-  project_name           = var.project_name
-  environment            = var.environment
-  private_app_subnet_ids = module.vpc.private_app_subnet_ids
-  ecs_security_group_id  = module.security.ecs_security_group_id
-  target_group_arn       = module.alb.target_group_arn
-  db_url_ssm_arn         = module.rds.db_url_ssm_arn
-  desired_count          = 1
-}
-
-# -----------------------------------------------------------------------------
-# 6. S3 Static Frontend Hosting Module
-# -----------------------------------------------------------------------------
-module "frontend" {
-  source = "./modules/frontend"
-
-  project_name = var.project_name
-  environment  = var.environment
-}
-
-# -----------------------------------------------------------------------------
-# 7. Route 53 DNS Zone & ACM SSL Certificate Module
-# -----------------------------------------------------------------------------
-module "route53" {
-  source = "./modules/route53"
-
-  project_name = var.project_name
-  environment  = var.environment
-  domain_name  = var.domain_name
-}
-
-# -----------------------------------------------------------------------------
-# 8. CloudFront Global CDN Module (S3 OAC + ALB Backend Routing)
-# -----------------------------------------------------------------------------
-module "cloudfront" {
-  source = "./modules/cloudfront"
-
-  project_name                   = var.project_name
-  environment                    = var.environment
-  s3_bucket_id                   = module.frontend.bucket_id
-  s3_bucket_arn                  = module.frontend.bucket_arn
-  s3_bucket_regional_domain_name = module.frontend.bucket_regional_domain_name
-  alb_dns_name                   = module.alb.alb_dns_name
-  domain_name                    = var.domain_name
-  acm_certificate_arn            = module.route53.acm_certificate_arn
-}
-
-# -----------------------------------------------------------------------------
-# 9. Route 53 CloudFront Apex & Subdomain Alias Records
-# -----------------------------------------------------------------------------
-resource "aws_route53_record" "apex_ipv4" {
-  count   = var.domain_name != "" ? 1 : 0
-  zone_id = module.route53.zone_id
-  name    = var.domain_name
-  type    = "A"
-
-  alias {
-    name                   = module.cloudfront.distribution_domain_name
-    zone_id                = module.cloudfront.distribution_hosted_zone_id
-    evaluate_target_health = false
+  filter {
+    name   = "name"
+    values = ["ubuntu/images/hvm-ssd-gp3/ubuntu-noble-24.04-arm64-server-*"]
   }
-}
 
-resource "aws_route53_record" "apex_ipv6" {
-  count   = var.domain_name != "" ? 1 : 0
-  zone_id = module.route53.zone_id
-  name    = var.domain_name
-  type    = "AAAA"
-
-  alias {
-    name                   = module.cloudfront.distribution_domain_name
-    zone_id                = module.cloudfront.distribution_hosted_zone_id
-    evaluate_target_health = false
-  }
-}
-
-resource "aws_route53_record" "www_ipv4" {
-  count   = var.domain_name != "" ? 1 : 0
-  zone_id = module.route53.zone_id
-  name    = "www.${var.domain_name}"
-  type    = "A"
-
-  alias {
-    name                   = module.cloudfront.distribution_domain_name
-    zone_id                = module.cloudfront.distribution_hosted_zone_id
-    evaluate_target_health = false
-  }
-}
-
-resource "aws_route53_record" "www_ipv6" {
-  count   = var.domain_name != "" ? 1 : 0
-  zone_id = module.route53.zone_id
-  name    = "www.${var.domain_name}"
-  type    = "AAAA"
-
-  alias {
-    name                   = module.cloudfront.distribution_domain_name
-    zone_id                = module.cloudfront.distribution_hosted_zone_id
-    evaluate_target_health = false
+  filter {
+    name   = "virtualization-type"
+    values = ["hvm"]
   }
 }
 
 # -----------------------------------------------------------------------------
-# 8. AWS Lambda ETL Ingestion Worker Module (Scheduled Weekly Sync)
+# 2. Production Security Group (Least Privilege & Hardened Ingress)
 # -----------------------------------------------------------------------------
-module "lambda_etl" {
-  source = "./modules/lambda_etl"
+resource "aws_security_group" "web_sg" {
+  name        = "${var.project_name}-${var.environment}-sg"
+  description = "Security group for low-cost single-instance web host"
 
-  project_name             = var.project_name
-  environment              = var.environment
-  private_app_subnet_ids   = module.vpc.private_app_subnet_ids
-  lambda_security_group_id = module.security.lambda_security_group_id
-  db_url_ssm_arn           = module.rds.db_url_ssm_arn
+  ingress {
+    description = "HTTP Traffic (Redirects to HTTPS)"
+    from_port   = 80
+    to_port     = 80
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  ingress {
+    description = "HTTPS Secured Web Traffic"
+    from_port   = 443
+    to_port     = 443
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  ingress {
+    description = "Restricted SSH Access"
+    from_port   = 22
+    to_port     = 22
+    protocol    = "tcp"
+    cidr_blocks = [var.allowed_ssh_cidr]
+  }
+
+  egress {
+    description = "Allow All Outbound Traffic"
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
 }
 
 # -----------------------------------------------------------------------------
-# 9. CloudWatch Monitoring & Operational Dashboard Module
+# 3. AWS Graviton ARM Compute Instance (t4g.micro / t4g.small)
 # -----------------------------------------------------------------------------
-module "monitoring" {
-  source = "./modules/monitoring"
+resource "aws_instance" "app_server" {
+  ami                    = data.aws_ami.ubuntu_arm64.id
+  instance_type          = var.instance_type
+  key_name               = var.ssh_key_name != "" ? var.ssh_key_name : null
+  vpc_security_group_ids = [aws_security_group.web_sg.id]
 
-  project_name            = var.project_name
-  environment             = var.environment
-  ecs_cluster_name        = module.ecs.ecs_cluster_name
-  ecs_service_name        = module.ecs.ecs_service_name
-  alb_arn_suffix          = module.alb.alb_arn_suffix
-  target_group_arn_suffix = module.alb.target_group_arn_suffix
-  db_instance_id          = module.rds.db_instance_id
+  # Hardware Security: Enforce IMDSv2
+  metadata_options {
+    http_endpoint               = "enabled"
+    http_tokens                 = "required"
+    http_put_response_hop_limit = 1
+  }
+
+  # Storage: Encrypted 20 GB GP3 EBS SSD Volume
+  root_block_device {
+    volume_size           = 20
+    volume_type           = "gp3"
+    encrypted             = true
+    delete_on_termination = true
+  }
+
+  # Automated User Data Bootstrapping Script
+  user_data = <<-EOF
+              #!/bin/bash
+              set -e
+              apt-get update -y
+              apt-get install -y docker.io docker-compose-v2 git curl
+              systemctl enable --now docker
+              EOF
+
+  tags = {
+    Name = "${var.project_name}-${var.environment}-server"
+  }
+}
+
+# -----------------------------------------------------------------------------
+# 4. Elastic IP (Static IPv4 Address for Persistent Domain DNS)
+# -----------------------------------------------------------------------------
+resource "aws_eip" "app_eip" {
+  instance = aws_instance.app_server.id
+  domain   = "vpc"
+
+  tags = {
+    Name = "${var.project_name}-${var.environment}-eip"
+  }
 }
