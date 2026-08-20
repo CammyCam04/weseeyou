@@ -110,4 +110,5 @@ jobs:
             git fetch --all
             git reset --hard origin/main
             sudo usermod -aG docker ubuntu || true
-            sudo docker compose -f docker-compose.prod.yml up -d --build
+            export ACME_EMAIL="${{ secrets.ACME_EMAIL }}"
+            sudo -E docker compose -f docker-compose.prod.yml up -d --build
